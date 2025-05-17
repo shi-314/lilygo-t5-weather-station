@@ -4,6 +4,9 @@
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
 #include <WiFi.h>
+#include <time.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 // Define pins for the display
 #define EPD_CS 5
@@ -15,32 +18,128 @@
 const char* ssid = ":(";
 const char* password = "20009742591595504581";
 
+// Open-Meteo API settings
+const char* openMeteoEndpoint = "https://api.open-meteo.com/v1/forecast";
+const float latitude = 52.520008;  // Berlin latitude
+const float longitude = 13.404954; // Berlin longitude
+
 GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RSET);
 GxEPD_Class display(io, EPD_RSET, EPD_BUSY);
 
 bool wifiConnected = false;
+String weatherData = "Loading...";
+String lastUpdateTime = "";
+unsigned long lastWeatherUpdate = 0;
+const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 minutes
+const unsigned long displayUpdateInterval = 60000;  // Update display every minute
+
+void updateWeather() {
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("Updating weather data...");
+        HTTPClient http;
+        String url = String(openMeteoEndpoint) + 
+                    "?latitude=" + String(latitude, 6) + 
+                    "&longitude=" + String(longitude, 6) + 
+                    "&current_weather=true" +
+                    "&hourly=windspeed_10m" +
+                    "&timezone=auto";
+        
+        Serial.print("Requesting URL: ");
+        Serial.println(url);
+        
+        http.begin(url);
+        int httpCode = http.GET();
+        
+        Serial.print("HTTP Response code: ");
+        Serial.println(httpCode);
+        
+        if (httpCode == HTTP_CODE_OK) {
+            String payload = http.getString();
+            Serial.println("Received payload:");
+            Serial.println(payload);
+            
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, payload);
+            
+            // Get current temperature and weather code
+            float temp = doc["current_weather"]["temperature"];
+            int weatherCode = doc["current_weather"]["weathercode"];
+            String timeStr = doc["current_weather"]["time"].as<String>();
+            float windSpeed = doc["hourly"]["windspeed_10m"][0];  // Get current hour's wind speed
+            
+            Serial.print("Temperature: ");
+            Serial.println(temp);
+            Serial.print("Weather code: ");
+            Serial.println(weatherCode);
+            Serial.print("Wind speed: ");
+            Serial.println(windSpeed);
+            Serial.print("Time: ");
+            Serial.println(timeStr);
+            
+            // Convert weather code to description
+            String weatherDesc;
+            switch (weatherCode) {
+                case 0: weatherDesc = "Clear"; break;
+                case 1: case 2: case 3: weatherDesc = "Cloudy"; break;
+                case 45: case 48: weatherDesc = "Foggy"; break;
+                case 51: case 53: case 55: weatherDesc = "Drizzle"; break;
+                case 61: case 63: case 65: weatherDesc = "Rain"; break;
+                case 71: case 73: case 75: weatherDesc = "Snow"; break;
+                case 77: weatherDesc = "Snow grains"; break;
+                case 80: case 81: case 82: weatherDesc = "Rain showers"; break;
+                case 85: case 86: weatherDesc = "Snow showers"; break;
+                case 95: weatherDesc = "Thunderstorm"; break;
+                case 96: case 99: weatherDesc = "Thunderstorm with hail"; break;
+                default: weatherDesc = "Unknown"; break;
+            }
+            
+            weatherData = String(temp, 1) + " C " + weatherDesc + "\nWind: " + String(windSpeed, 1) + " km/h";
+            // Extract time from ISO string (YYYY-MM-DDTHH:MM:SS)
+            lastUpdateTime = timeStr.substring(11, 16); // Get HH:MM part
+            Serial.print("Weather data: ");
+            Serial.println(weatherData);
+            Serial.print("Last update time: ");
+            Serial.println(lastUpdateTime);
+        } else {
+            Serial.println("Failed to get weather data");
+            weatherData = "Weather error";
+        }
+        
+        http.end();
+    } else {
+        Serial.println("WiFi not connected, cannot update weather");
+    }
+}
 
 void updateDisplay() {
+    Serial.println("Updating display...");
+    
+    // Clear the entire display first
+    display.fillScreen(GxEPD_WHITE);
+    
     // Set text properties
     display.setTextColor(GxEPD_BLACK);
     display.setTextSize(2);
     
-    // Clear the display area
-    display.fillRect(30, 10, 180, 50, GxEPD_WHITE);
-    
     // Display WiFi status
-    display.setCursor(30, 10);
+    display.setCursor(10, 20);
     display.print("WiFi: ");
     display.println(wifiConnected ? "Connected" : "Disconnected");
     
     if (wifiConnected) {
-        display.setCursor(30, 40);
-        display.print("IP: ");
-        display.println(WiFi.localIP());
+        // Display last update time
+        display.setCursor(10, 50);
+        display.print("Last update: ");
+        display.println(lastUpdateTime);
+        
+        // Display weather
+        display.setCursor(10, 80);
+        display.println(weatherData);
     }
     
-    // Update only the area we changed with faster refresh
-    display.updateWindow(30, 10, 180, 50, true);
+    // Update the entire display
+    display.update();
+    Serial.println("Display updated");
 }
 
 void connectToWiFi() {
@@ -59,6 +158,9 @@ void connectToWiFi() {
         Serial.print("IP address: ");
         Serial.println(WiFi.localIP());
         wifiConnected = true;
+        
+        // Get initial weather data
+        updateWeather();
     } else {
         Serial.println("\nFailed to connect to WiFi");
         wifiConnected = false;
@@ -93,12 +195,30 @@ void setup() {
 void loop() {
     // Check WiFi connection status
     if (WiFi.status() != WL_CONNECTED && wifiConnected) {
+        Serial.println("WiFi connection lost");
         wifiConnected = false;
         updateDisplay();
     } else if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
+        Serial.println("WiFi reconnected");
         wifiConnected = true;
+        updateWeather();
         updateDisplay();
     }
     
-    delay(1000); // Check every second
+    // Update weather periodically
+    if (wifiConnected && (millis() - lastWeatherUpdate >= weatherUpdateInterval)) {
+        Serial.println("Time to update weather");
+        updateWeather();
+        lastWeatherUpdate = millis();
+        updateDisplay();
+    }
+    
+    // Update display every minute
+    static unsigned long lastUpdate = 0;
+    if (millis() - lastUpdate >= displayUpdateInterval) {
+        updateDisplay();
+        lastUpdate = millis();
+    }
+    
+    delay(100); // Increased delay to reduce CPU usage
 } 
