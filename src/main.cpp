@@ -28,6 +28,7 @@ GxEPD_Class display(io, EPD_RSET, EPD_BUSY);
 
 bool wifiConnected = false;
 String weatherData = "Loading...";
+String windData = "Loading...";
 String lastUpdateTime = "";
 unsigned long lastWeatherUpdate = 0;
 const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 minutes
@@ -41,7 +42,7 @@ void updateWeather() {
                     "?latitude=" + String(latitude, 6) + 
                     "&longitude=" + String(longitude, 6) + 
                     "&current_weather=true" +
-                    "&hourly=windspeed_10m" +
+                    "&current=wind_speed_10m" +
                     "&timezone=auto";
         
         Serial.print("Requesting URL: ");
@@ -65,7 +66,8 @@ void updateWeather() {
             float temp = doc["current_weather"]["temperature"];
             int weatherCode = doc["current_weather"]["weathercode"];
             String timeStr = doc["current_weather"]["time"].as<String>();
-            float windSpeed = doc["hourly"]["windspeed_10m"][0];  // Get current hour's wind speed
+            float windSpeed = doc["current_weather"]["windspeed"];
+            String windSpeedUnit = doc["current_weather_units"]["windspeed"];
             
             Serial.print("Temperature: ");
             Serial.println(temp);
@@ -93,7 +95,8 @@ void updateWeather() {
                 default: weatherDesc = "Unknown"; break;
             }
             
-            weatherData = String(temp, 1) + " C " + weatherDesc + "\nWind: " + String(windSpeed, 1) + " km/h";
+            weatherData = String(temp, 1) + " C " + weatherDesc;
+            windData = String(windSpeed, 1) + " " + windSpeedUnit;
             // Extract time from ISO string (YYYY-MM-DDTHH:MM:SS)
             lastUpdateTime = timeStr.substring(11, 16); // Get HH:MM part
             Serial.print("Weather data: ");
@@ -128,13 +131,17 @@ void updateDisplay() {
     
     if (wifiConnected) {
         // Display last update time
-        display.setCursor(10, 50);
+        display.setCursor(10, 40);
         display.print("Last update: ");
         display.println(lastUpdateTime);
         
         // Display weather
-        display.setCursor(10, 80);
+        display.setCursor(10, 90);
         display.println(weatherData);
+        
+        // Display wind speed
+        display.setCursor(10, 110);
+        display.println(windData);
     }
     
     // Update the entire display
