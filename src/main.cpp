@@ -13,6 +13,12 @@
 #define EPD_DC 17
 #define EPD_RSET 16
 #define EPD_BUSY 4
+#define BATTERY_PIN 35  // ADC pin for battery voltage
+
+// Battery voltage constants
+#define BATTERY_MAX_VOLTAGE 4.2  // Maximum battery voltage
+#define BATTERY_MIN_VOLTAGE 3.3  // Minimum battery voltage
+#define VOLTAGE_DIVIDER_RATIO 2.0  // Voltage divider ratio (if used)
 
 // WiFi credentials
 const char* ssid = ":(";
@@ -33,6 +39,19 @@ String lastUpdateTime = "";
 unsigned long lastWeatherUpdate = 0;
 const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 minutes
 const unsigned long displayUpdateInterval = 60000;  // Update display every minute
+
+String getBatteryStatus() {
+    // Read battery voltage
+    int rawValue = analogRead(BATTERY_PIN);
+    float voltage = (rawValue * 3.3) / 4095.0;  // Convert to voltage (ESP32 ADC is 12-bit, 0-3.3V)
+    voltage *= VOLTAGE_DIVIDER_RATIO;  // Adjust for voltage divider if used
+    
+    // Calculate percentage
+    int percentage = map(voltage * 100, BATTERY_MIN_VOLTAGE * 100, BATTERY_MAX_VOLTAGE * 100, 0, 100);
+    percentage = constrain(percentage, 0, 100);  // Ensure percentage is between 0 and 100
+    
+    return String(percentage) + "%";
+}
 
 void updateWeather() {
     if (WiFi.status() == WL_CONNECTED) {
@@ -130,10 +149,10 @@ void updateDisplay() {
     display.setTextColor(GxEPD_BLACK);
     display.setTextSize(2);
     
-    // Display WiFi status
+    // Display battery status
     display.setCursor(10, 20);
-    display.print("WiFi: ");
-    display.println(wifiConnected ? "Connected" : "Disconnected");
+    display.print("Battery: ");
+    display.println(getBatteryStatus());
     
     if (wifiConnected) {
         // Display last update time
@@ -184,6 +203,9 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Starting...");
 
+    // Initialize battery ADC
+    pinMode(BATTERY_PIN, INPUT);
+    
     // Initialize SPI
     SPI.begin(18, 19, 23);  // SCK, MISO, MOSI
 
@@ -201,7 +223,7 @@ void setup() {
     // Connect to WiFi
     connectToWiFi();
     
-    // Update display with WiFi status
+    // Update display with battery status
     updateDisplay();
 }
 
