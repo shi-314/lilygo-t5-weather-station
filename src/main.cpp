@@ -8,12 +8,19 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "battery.h"
+#include "wifi_connection.h"
 
 // Define pins for the display
 #define EPD_CS 5
 #define EPD_DC 17
 #define EPD_RSET 16
 #define EPD_BUSY 4
+#define BATTERY_PIN 35  // ADC pin for battery voltage
+
+// Battery voltage constants
+#define BATTERY_MAX_VOLTAGE 4.2  // Maximum battery voltage
+#define BATTERY_MIN_VOLTAGE 3.3  // Minimum battery voltage
+#define VOLTAGE_DIVIDER_RATIO 2.0  // Voltage divider ratio (if used)
 
 // WiFi credentials
 const char* ssid = ":(";
@@ -27,7 +34,6 @@ const float longitude = 13.404954; // Berlin longitude
 GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RSET);
 GxEPD_Class display(io, EPD_RSET, EPD_BUSY);
 
-bool wifiConnected = false;
 String weatherData = "Loading...";
 String windData = "Loading...";
 String lastUpdateTime = "";
@@ -35,8 +41,10 @@ unsigned long lastWeatherUpdate = 0;
 const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 minutes
 const unsigned long displayUpdateInterval = 60000;  // Update display every minute
 
+WiFiConnection wifi(ssid, password);
+
 void updateWeather() {
-    if (WiFi.status() == WL_CONNECTED) {
+    if (wifi.isConnected()) {
         Serial.println("Updating weather data...");
         HTTPClient http;
         String url = String(openMeteoEndpoint) + 
@@ -136,7 +144,7 @@ void updateDisplay() {
     display.print("Battery: ");
     display.println(getBatteryStatus());
     
-    if (wifiConnected) {
+    if (wifi.isConnected()) {
         // Display last update time
         display.setCursor(10, 40);
         display.print("Last update: ");
@@ -154,31 +162,6 @@ void updateDisplay() {
     // Update the entire display
     display.update();
     Serial.println("Display updated");
-}
-
-void connectToWiFi() {
-    Serial.print("Connecting to WiFi");
-    WiFi.begin(ssid, password);
-    
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-        delay(500);
-        Serial.print(".");
-        attempts++;
-    }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\nConnected to WiFi");
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-        wifiConnected = true;
-        
-        // Get initial weather data
-        updateWeather();
-    } else {
-        Serial.println("\nFailed to connect to WiFi");
-        wifiConnected = false;
-    }
 }
 
 void setup() {
@@ -203,7 +186,7 @@ void setup() {
     display.update();
     
     // Connect to WiFi
-    connectToWiFi();
+    wifi.connect();
     
     // Update display with battery status
     updateDisplay();
@@ -211,19 +194,13 @@ void setup() {
 
 void loop() {
     // Check WiFi connection status
-    if (WiFi.status() != WL_CONNECTED && wifiConnected) {
+    if (!wifi.isConnected()) {
         Serial.println("WiFi connection lost");
-        wifiConnected = false;
-        updateDisplay();
-    } else if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
-        Serial.println("WiFi reconnected");
-        wifiConnected = true;
-        updateWeather();
         updateDisplay();
     }
     
     // Update weather periodically
-    if (wifiConnected && (millis() - lastWeatherUpdate >= weatherUpdateInterval)) {
+    if (wifi.isConnected() && (millis() - lastWeatherUpdate >= weatherUpdateInterval)) {
         Serial.println("Time to update weather");
         updateWeather();
         lastWeatherUpdate = millis();
