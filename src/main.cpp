@@ -7,18 +7,13 @@
 #include <time.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include "battery.h"
 
 // Define pins for the display
 #define EPD_CS 5
 #define EPD_DC 17
 #define EPD_RSET 16
 #define EPD_BUSY 4
-#define BATTERY_PIN 35  // ADC pin for battery voltage
-
-// Battery voltage constants
-#define BATTERY_MAX_VOLTAGE 4.2  // Maximum battery voltage
-#define BATTERY_MIN_VOLTAGE 3.3  // Minimum battery voltage
-#define VOLTAGE_DIVIDER_RATIO 2.0  // Voltage divider ratio (if used)
 
 // WiFi credentials
 const char* ssid = ":(";
@@ -39,19 +34,6 @@ String lastUpdateTime = "";
 unsigned long lastWeatherUpdate = 0;
 const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 minutes
 const unsigned long displayUpdateInterval = 60000;  // Update display every minute
-
-String getBatteryStatus() {
-    // Read battery voltage
-    int rawValue = analogRead(BATTERY_PIN);
-    float voltage = (rawValue * 3.3) / 4095.0;  // Convert to voltage (ESP32 ADC is 12-bit, 0-3.3V)
-    voltage *= VOLTAGE_DIVIDER_RATIO;  // Adjust for voltage divider if used
-    
-    // Calculate percentage
-    int percentage = map(voltage * 100, BATTERY_MIN_VOLTAGE * 100, BATTERY_MAX_VOLTAGE * 100, 0, 100);
-    percentage = constrain(percentage, 0, 100);  // Ensure percentage is between 0 and 100
-    
-    return String(percentage) + "%";
-}
 
 void updateWeather() {
     if (WiFi.status() == WL_CONNECTED) {
