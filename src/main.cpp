@@ -3,7 +3,6 @@
 #include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
-#include <WiFi.h>
 #include <time.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -15,12 +14,6 @@
 #define EPD_DC 17
 #define EPD_RSET 16
 #define EPD_BUSY 4
-#define BATTERY_PIN 35  // ADC pin for battery voltage
-
-// Battery voltage constants
-#define BATTERY_MAX_VOLTAGE 4.2  // Maximum battery voltage
-#define BATTERY_MIN_VOLTAGE 3.3  // Minimum battery voltage
-#define VOLTAGE_DIVIDER_RATIO 2.0  // Voltage divider ratio (if used)
 
 // WiFi credentials
 const char* ssid = ":(";
@@ -43,90 +36,75 @@ const unsigned long displayUpdateInterval = 60000;  // Update display every minu
 
 WiFiConnection wifi(ssid, password);
 
-void updateWeather() {
-    if (wifi.isConnected()) {
-        Serial.println("Updating weather data...");
-        HTTPClient http;
-        String url = String(openMeteoEndpoint) + 
-                    "?latitude=" + String(latitude, 6) + 
-                    "&longitude=" + String(longitude, 6) + 
-                    "&current_weather=true" +
-                    "&current=wind_speed_10m" +
-                    "&timezone=auto";
-        
-        Serial.print("Requesting URL: ");
-        Serial.println(url);
-        
-        http.begin(url);
-        int httpCode = http.GET();
-        
-        Serial.print("HTTP Response code: ");
-        Serial.println(httpCode);
-        
-        if (httpCode == HTTP_CODE_OK) {
-            String payload = http.getString();
-            Serial.println("Received payload:");
-            Serial.println(payload);
-            
-            DynamicJsonDocument doc(1024);
-            deserializeJson(doc, payload);
-            
-            // Get current temperature and weather code
-            float temp = doc["current_weather"]["temperature"];
-            int weatherCode = doc["current_weather"]["weathercode"];
-            String timeStr = doc["current_weather"]["time"].as<String>();
-            float windSpeed = doc["current_weather"]["windspeed"];
-            String windSpeedUnit = doc["current_weather_units"]["windspeed"];
-            
-            Serial.print("Temperature: ");
-            Serial.println(temp);
-            Serial.print("Weather code: ");
-            Serial.println(weatherCode);
-            Serial.print("Wind speed: ");
-            Serial.println(windSpeed);
-            Serial.print("Time: ");
-            Serial.println(timeStr);
-            
-            // Convert weather code to description
-            String weatherDesc;
-            switch (weatherCode) {
-                case 0: weatherDesc = "Clear"; break;
-                case 1: case 2: case 3: weatherDesc = "Cloudy"; break;
-                case 45: case 48: weatherDesc = "Foggy"; break;
-                case 51: case 53: case 55: weatherDesc = "Drizzle"; break;
-                case 61: case 63: case 65: weatherDesc = "Rain"; break;
-                case 71: case 73: case 75: weatherDesc = "Snow"; break;
-                case 77: weatherDesc = "Snow grains"; break;
-                case 80: case 81: case 82: weatherDesc = "Rain showers"; break;
-                case 85: case 86: weatherDesc = "Snow showers"; break;
-                case 95: weatherDesc = "Thunderstorm"; break;
-                case 96: case 99: weatherDesc = "Thunderstorm with hail"; break;
-                default: weatherDesc = "Unknown"; break;
-            }
-            
-            weatherData = String(temp, 1) + " C " + weatherDesc;
-            windData = String(windSpeed, 1) + " " + windSpeedUnit;
-            
-            // Parse ISO 8601 time format using strptime
-            struct tm timeinfo;
-            strptime(timeStr.c_str(), "%Y-%m-%dT%H:%M", &timeinfo);
-            char timeBuffer[6];
-            strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
-            lastUpdateTime = String(timeBuffer);
-            
-            Serial.print("Weather data: ");
-            Serial.println(weatherData);
-            Serial.print("Last update time: ");
-            Serial.println(lastUpdateTime);
-        } else {
-            Serial.println("Failed to get weather data");
-            weatherData = "Weather error";
-        }
-        
-        http.end();
-    } else {
-        Serial.println("WiFi not connected, cannot update weather");
+String getWeatherDescription(int weatherCode) {
+    switch (weatherCode) {
+        case 0: return "Clear";
+        case 1: case 2: case 3: return "Cloudy";
+        case 45: case 48: return "Foggy";
+        case 51: case 53: case 55: return "Drizzle";
+        case 61: case 63: case 65: return "Rain";
+        case 71: case 73: case 75: return "Snow";
+        case 77: return "Snow grains";
+        case 80: case 81: case 82: return "Rain showers";
+        case 85: case 86: return "Snow showers";
+        case 95: return "Thunderstorm";
+        case 96: case 99: return "Thunderstorm with hail";
+        default: return "Unknown";
     }
+}
+
+void updateWeather() {
+    if (!wifi.isConnected()) {
+        Serial.println("WiFi not connected");
+        return;
+    }
+
+    HTTPClient http;
+    String url = String(openMeteoEndpoint) + 
+                "?latitude=" + String(latitude, 6) + 
+                "&longitude=" + String(longitude, 6) + 
+                "&current_weather=true" +
+                "&current=wind_speed_10m" +
+                "&timezone=auto";
+    
+    http.begin(url);
+    int httpCode = http.GET();
+    
+    if (httpCode != HTTP_CODE_OK) {
+        Serial.println("Failed to get weather data");
+        weatherData = "Weather error";
+        http.end();
+        return;
+    }
+
+    String payload = http.getString();
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, payload);
+    
+    if (error) {
+        Serial.print("JSON parsing failed: ");
+        Serial.println(error.c_str());
+        weatherData = "JSON error";
+        http.end();
+        return;
+    }
+
+    float temp = doc["current_weather"]["temperature"];
+    int weatherCode = doc["current_weather"]["weathercode"];
+    String timeStr = doc["current_weather"]["time"].as<String>();
+    float windSpeed = doc["current_weather"]["windspeed"];
+    String windSpeedUnit = doc["current_weather_units"]["windspeed"];
+    
+    weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
+    windData = String(windSpeed, 1) + " " + windSpeedUnit;
+    
+    struct tm timeinfo;
+    strptime(timeStr.c_str(), "%Y-%m-%dT%H:%M", &timeinfo);
+    char timeBuffer[6];
+    strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
+    lastUpdateTime = String(timeBuffer);
+    
+    http.end();
 }
 
 void updateDisplay() {
@@ -166,46 +144,35 @@ void updateDisplay() {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Starting...");
-
-    // Initialize battery ADC
+    
     pinMode(BATTERY_PIN, INPUT);
+    SPI.begin(18, 19, 23);
     
-    // Initialize SPI
-    SPI.begin(18, 19, 23);  // SCK, MISO, MOSI
-
-    // Initialize display
     display.init();
-    Serial.println("Display initialized");
-
-    // Set rotation to landscape (1 = 90 degrees clockwise)
     display.setRotation(1);
-    
-    // Initial full display update
     display.fillScreen(GxEPD_WHITE);
     display.update();
     
-    // Connect to WiFi
     wifi.connect();
+    if (!wifi.isConnected()) {
+        Serial.println("Failed to connect to WiFi");
+        return;
+    }
     
-    // Update display with battery status
+    updateWeather();
+    lastWeatherUpdate = millis();
     updateDisplay();
 }
 
 void loop() {
-    // Check WiFi connection status
-    if (!wifi.isConnected()) {
-        Serial.println("WiFi connection lost");
-        updateDisplay();
-    }
+    wifi.checkConnection();
+    unsigned long currentMillis = millis();
     
-    // Update weather periodically
-    if (wifi.isConnected() && (millis() - lastWeatherUpdate >= weatherUpdateInterval)) {
-        Serial.println("Time to update weather");
+    if (wifi.isConnected() && currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
         updateWeather();
-        lastWeatherUpdate = millis();
+        lastWeatherUpdate = currentMillis;
         updateDisplay();
     }
     
-    delay(100); // Small delay to prevent CPU hogging
+    delay(100);
 } 

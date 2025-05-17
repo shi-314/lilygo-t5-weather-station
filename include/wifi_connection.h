@@ -7,6 +7,7 @@ class WiFiConnection {
 public:
     WiFiConnection(const char* ssid, const char* password);
     void connect();
+    void reconnect();
     bool isConnected();
     void checkConnection();
 
