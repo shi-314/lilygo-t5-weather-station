@@ -220,12 +220,5 @@ void loop() {
         updateDisplay();
     }
     
-    // Update display every minute
-    static unsigned long lastUpdate = 0;
-    if (millis() - lastUpdate >= displayUpdateInterval) {
-        updateDisplay();
-        lastUpdate = millis();
-    }
-    
-    delay(100); // Increased delay to reduce CPU usage
+    delay(100); // Small delay to prevent CPU hogging
 } 
