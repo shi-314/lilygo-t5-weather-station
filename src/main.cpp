@@ -97,8 +97,14 @@ void updateWeather() {
             
             weatherData = String(temp, 1) + " C " + weatherDesc;
             windData = String(windSpeed, 1) + " " + windSpeedUnit;
-            // Extract time from ISO string (YYYY-MM-DDTHH:MM:SS)
-            lastUpdateTime = timeStr.substring(11, 16); // Get HH:MM part
+            
+            // Parse ISO 8601 time format using strptime
+            struct tm timeinfo;
+            strptime(timeStr.c_str(), "%Y-%m-%dT%H:%M", &timeinfo);
+            char timeBuffer[6];
+            strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
+            lastUpdateTime = String(timeBuffer);
+            
             Serial.print("Weather data: ");
             Serial.println(weatherData);
             Serial.print("Last update time: ");
