@@ -26,11 +26,11 @@ WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
 
 // Forward declarations
-void updateDisplay();
+void displayWeather(Weather& weather);
 void goToSleep();
 void displayWifiErrorIcon();
 
-void updateDisplay() {
+void displayWeather(Weather& weather) {
     Serial.println("Updating display...");
     
     display.init(115200);
@@ -117,7 +117,7 @@ void setup() {
     }
     
     weather.update();
-    updateDisplay();
+    displayWeather(weather);
     
     goToSleep();
 }
