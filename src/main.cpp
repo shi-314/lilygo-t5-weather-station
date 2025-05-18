@@ -8,6 +8,7 @@
 #include "wifi_connection.h"
 #include <Fonts/FreeSans9pt7b.h>  // Smaller font for general text
 #include <Fonts/FreeSans12pt7b.h> // Larger font for weather data
+#include "boards.h"  // Include for LED pin definition
 
 // Define pins for the display
 #define EPD_CS 5
@@ -31,7 +32,7 @@ String windData = "Loading...";
 String lastUpdateTime = "";
 unsigned long lastWeatherUpdate = 0;
 const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 minutes
-const unsigned long displayUpdateInterval = 60000;  // Update display every minute
+const unsigned long sleepTime = 300000000; // Deep sleep time in microseconds (5 minutes)
 
 WiFiConnection wifi(ssid, password);
 
@@ -144,6 +145,13 @@ void updateDisplay() {
     Serial.println("Display updated");
 }
 
+void goToSleep() {
+    Serial.println("Going to deep sleep for " + String(sleepTime / 1000000) + " seconds");
+    
+    esp_sleep_enable_timer_wakeup(sleepTime);
+    esp_deep_sleep_start();
+}
+
 void setup() {
     Serial.begin(115200);
     
@@ -158,23 +166,17 @@ void setup() {
     wifi.connect();
     if (!wifi.isConnected()) {
         Serial.println("Failed to connect to WiFi");
+        goToSleep();
         return;
     }
     
     updateWeather();
-    lastWeatherUpdate = millis();
     updateDisplay();
+    
+    goToSleep();
 }
 
 void loop() {
-    wifi.checkConnection();
-    unsigned long currentMillis = millis();
-    
-    if (wifi.isConnected() && currentMillis - lastWeatherUpdate >= weatherUpdateInterval) {
-        updateWeather();
-        lastWeatherUpdate = currentMillis;
-        updateDisplay();
-    }
-    
-    delay(100);
+    // Most of the work is done in setup() followed by deep sleep
+    // The loop() function won't be executed unless something prevents deep sleep
 } 
