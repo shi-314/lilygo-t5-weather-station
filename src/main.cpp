@@ -1,13 +1,13 @@
 #include <Arduino.h>
-#include <GxEPD.h>
-#include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP
-#include <GxIO/GxIO_SPI/GxIO_SPI.h>
-#include <GxIO/GxIO.h>
+#include <GxEPD2_4G_4G.h>
+#include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include <time.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "battery.h"
 #include "wifi_connection.h"
+#include <Fonts/FreeSans9pt7b.h>  // Smaller font for general text
+#include <Fonts/FreeSans12pt7b.h> // Larger font for weather data
 
 // Define pins for the display
 #define EPD_CS 5
@@ -24,8 +24,7 @@ const char* openMeteoEndpoint = "https://api.open-meteo.com/v1/forecast";
 const float latitude = 52.520008;  // Berlin latitude
 const float longitude = 13.404954; // Berlin longitude
 
-GxIO_Class io(SPI, EPD_CS, EPD_DC, EPD_RSET);
-GxEPD_Class display(io, EPD_RSET, EPD_BUSY);
+GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
 String weatherData = "Loading...";
 String windData = "Loading...";
@@ -110,35 +109,40 @@ void updateWeather() {
 void updateDisplay() {
     Serial.println("Updating display...");
     
-    // Clear the entire display first
+    // Initialize display with 115200 baud rate
+    display.init(115200);
+    display.setRotation(1);
+    
+    // Clear the entire display first with white
     display.fillScreen(GxEPD_WHITE);
     
-    // Set text properties
-    display.setTextColor(GxEPD_BLACK);
-    display.setTextSize(2);
-    
-    // Display battery status
+    // Use smaller font for battery status
+    display.setFont(&FreeSans9pt7b);
+    display.setTextColor(GxEPD_LIGHTGREY);
     display.setCursor(10, 20);
     display.print("Battery: ");
     display.println(getBatteryStatus());
     
     if (wifi.isConnected()) {
-        // Display last update time
-        display.setCursor(10, 40);
+        // Display last update time with smaller font
+        display.setCursor(10, 45);
         display.print("Last update: ");
         display.println(lastUpdateTime);
         
-        // Display weather
-        display.setCursor(10, 90);
+        // Use larger font for weather data
+        display.setTextColor(GxEPD_BLACK);
+        display.setFont(&FreeSans12pt7b);
+        display.setCursor(10, 80);  // Adjusted position for larger font
         display.println(weatherData);
         
-        // Display wind speed
-        display.setCursor(10, 110);
+        // Keep larger font for wind data
+        display.setCursor(10, 115);  // Adjusted position for second line of larger font
         display.println(windData);
     }
     
     // Update the entire display
-    display.update();
+    display.displayWindow(0, 0, display.width(), display.height());
+    display.hibernate();
     Serial.println("Display updated");
 }
 
@@ -148,10 +152,13 @@ void setup() {
     pinMode(BATTERY_PIN, INPUT);
     SPI.begin(18, 19, 23);
     
-    display.init();
+    // Initialize display with 115200 baud rate
+    display.init(115200);
     display.setRotation(1);
+    display.setFont(&FreeSans9pt7b);  // Use smaller font for initial setup
     display.fillScreen(GxEPD_WHITE);
-    display.update();
+    display.displayWindow(0, 0, display.width(), display.height());
+    display.hibernate();
     
     wifi.connect();
     if (!wifi.isConnected()) {
