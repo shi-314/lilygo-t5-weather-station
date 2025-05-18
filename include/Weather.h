@@ -17,6 +17,7 @@ public:
     String getWindText() const;
     String getLastUpdateTime() const;
     bool isTimeToUpdate(unsigned long currentMillis) const;
+    int getWindDirection() const;
 
 private:
     // API settings
@@ -30,6 +31,7 @@ private:
     String lastUpdateTime = "";
     unsigned long lastWeatherUpdate = 0;
     const unsigned long updateInterval = 300000; // Update weather every 5 minutes
+    int windDirection = 0;
     
     String getWeatherDescription(int weatherCode) const;
 }; 

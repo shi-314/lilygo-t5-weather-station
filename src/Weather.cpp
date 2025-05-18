@@ -27,6 +27,7 @@ void Weather::update() {
     String payload = http.getString();
     DynamicJsonDocument doc(1024);
     DeserializationError error = deserializeJson(doc, payload);
+    Serial.println(payload);
     
     if (error) {
         Serial.print("JSON parsing failed: ");
@@ -41,6 +42,7 @@ void Weather::update() {
     String timeStr = doc["current_weather"]["time"].as<String>();
     float windSpeed = doc["current_weather"]["windspeed"];
     String windSpeedUnit = doc["current_weather_units"]["windspeed"];
+    windDirection = doc["current_weather"]["winddirection"];
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
     windData = String(windSpeed, 1) + " " + windSpeedUnit;
@@ -87,4 +89,8 @@ String Weather::getLastUpdateTime() const {
 
 bool Weather::isTimeToUpdate(unsigned long currentMillis) const {
     return (currentMillis - lastWeatherUpdate) >= updateInterval || lastWeatherUpdate == 0;
+}
+
+int Weather::getWindDirection() const {
+    return windDirection;
 } 
