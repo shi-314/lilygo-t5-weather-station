@@ -109,34 +109,32 @@ void updateWeather() {
 void updateDisplay() {
     Serial.println("Updating display...");
     
-    // Initialize display with 115200 baud rate
     display.init(115200);
     display.setRotation(1);
-    
-    // Clear the entire display first with white
     display.fillScreen(GxEPD_WHITE);
-    
-    // Use smaller font for battery status
+
     display.setFont(&FreeSans9pt7b);
     display.setTextColor(GxEPD_LIGHTGREY);
+
     display.setCursor(10, 20);
     display.print("Battery: ");
     display.println(getBatteryStatus());
     
     if (wifi.isConnected()) {
-        // Display last update time with smaller font
+        display.setFont(&FreeSans9pt7b);
+        display.setTextColor(GxEPD_LIGHTGREY);
+
         display.setCursor(10, 45);
         display.print("Last update: ");
         display.println(lastUpdateTime);
         
-        // Use larger font for weather data
         display.setTextColor(GxEPD_BLACK);
         display.setFont(&FreeSans12pt7b);
-        display.setCursor(10, 80);  // Adjusted position for larger font
+
+        display.setCursor(10, 100); 
         display.println(weatherData);
         
-        // Keep larger font for wind data
-        display.setCursor(10, 115);  // Adjusted position for second line of larger font
+        display.setCursor(10, 125);
         display.println(windData);
     }
     
@@ -152,12 +150,9 @@ void setup() {
     pinMode(BATTERY_PIN, INPUT);
     SPI.begin(18, 19, 23);
     
-    // Initialize display with 115200 baud rate
     display.init(115200);
     display.setRotation(1);
-    display.setFont(&FreeSans9pt7b);  // Use smaller font for initial setup
     display.fillScreen(GxEPD_WHITE);
-    display.displayWindow(0, 0, display.width(), display.height());
     display.hibernate();
     
     wifi.connect();
