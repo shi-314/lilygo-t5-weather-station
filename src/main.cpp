@@ -9,12 +9,7 @@
 #include <Fonts/FreeSans9pt7b.h>  // Smaller font for general text
 #include <Fonts/FreeSans12pt7b.h> // Larger font for weather data
 #include "boards.h"  // Include for LED pin definition
-
-// Define pins for the display
-#define EPD_CS 5
-#define EPD_DC 17
-#define EPD_RSET 16
-#define EPD_BUSY 4
+#include "assets/WifiErrorIcon.h"
 
 // WiFi credentials
 const char* ssid = ":(";
@@ -35,6 +30,12 @@ const unsigned long weatherUpdateInterval = 300000; // Update weather every 5 mi
 const unsigned long sleepTime = 300000000; // Deep sleep time in microseconds (5 minutes)
 
 WiFiConnection wifi(ssid, password);
+
+// Forward declarations
+void updateWeather();
+void updateDisplay();
+void goToSleep();
+void displayWifiErrorIcon();
 
 String getWeatherDescription(int weatherCode) {
     switch (weatherCode) {
@@ -121,23 +122,22 @@ void updateDisplay() {
     display.print("Battery: ");
     display.println(getBatteryStatus());
     
-    if (wifi.isConnected()) {
-        display.setFont(&FreeSans9pt7b);
-        display.setTextColor(GxEPD_LIGHTGREY);
+    // Only called when WiFi is connected
+    display.setFont(&FreeSans9pt7b);
+    display.setTextColor(GxEPD_LIGHTGREY);
 
-        display.setCursor(10, 45);
-        display.print("Last update: ");
-        display.println(lastUpdateTime);
-        
-        display.setTextColor(GxEPD_BLACK);
-        display.setFont(&FreeSans12pt7b);
+    display.setCursor(10, 45);
+    display.print("Last update: ");
+    display.println(lastUpdateTime);
+    
+    display.setTextColor(GxEPD_BLACK);
+    display.setFont(&FreeSans12pt7b);
 
-        display.setCursor(10, 100); 
-        display.println(weatherData);
-        
-        display.setCursor(10, 125);
-        display.println(windData);
-    }
+    display.setCursor(10, 100); 
+    display.println(weatherData);
+    
+    display.setCursor(10, 125);
+    display.println(windData);
     
     // Update the entire display
     display.displayWindow(0, 0, display.width(), display.height());
@@ -150,6 +150,29 @@ void goToSleep() {
     
     esp_sleep_enable_timer_wakeup(sleepTime);
     esp_deep_sleep_start();
+}
+
+void displayWifiErrorIcon() {
+    Serial.println("Displaying WiFi error icon");
+    
+    display.init(115200);
+    display.setRotation(1);  // Ensure consistent rotation
+    display.fillScreen(GxEPD_WHITE);
+    
+    // WifiErrorIcon is 16x16 pixels
+    int iconWidth = 16;
+    int iconHeight = 16;
+    
+    // Calculate center position to place the icon exactly in the center
+    int centerX = (display.width() / 2) - (iconWidth / 2);
+    int centerY = (display.height() / 2) - (iconHeight / 2);
+    
+    // Draw the icon at the center
+    display.drawBitmap(centerX, centerY, WifiErrorIcon, iconWidth, iconHeight, GxEPD_BLACK);
+    
+    // Full update to ensure the icon is properly displayed
+    display.displayWindow(0, 0, display.width(), display.height());
+    display.hibernate();
 }
 
 void setup() {
@@ -166,6 +189,7 @@ void setup() {
     wifi.connect();
     if (!wifi.isConnected()) {
         Serial.println("Failed to connect to WiFi");
+        displayWifiErrorIcon();
         goToSleep();
         return;
     }
