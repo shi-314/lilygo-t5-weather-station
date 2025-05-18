@@ -29,6 +29,34 @@ Weather weather(latitude, longitude);
 void displayWeather(Weather& weather);
 void goToSleep();
 void displayWifiErrorIcon();
+void drawWindDirectionIndicator(int x, int y, int radius, int direction);
+
+void drawWindDirectionIndicator(int x, int y, int radius, int direction) {
+    display.drawCircle(x, y, radius, GxEPD_LIGHTGREY);
+    
+    // Calculate the end point of the direction line
+    // Meteorological wind direction: 0° = wind FROM North, 90° = wind FROM East
+    // We need to:
+    // 1. Convert from "wind from" to "wind to" by adding 180°
+    // 2. Adjust for screen coordinates where Y increases downward
+    
+    // Convert from "wind from" to "wind to"
+    int adjustedDir = (direction + 180) % 360;
+    
+    // In screen coordinates: 0° is right, clockwise rotation
+    // North is upward (270°), East is right (0°), South is down (90°), West is left (180°)
+    float angleRadians = adjustedDir * PI / 180.0;
+    
+    // Calculate end point (note: sin is negated because screen Y increases downward)
+    int endX = x + round(radius * sin(angleRadians));
+    int endY = y - round(radius * cos(angleRadians));
+    
+    // Draw the direction line
+    display.drawLine(x, y, endX, endY, GxEPD_DARKGREY);
+    
+    // Draw a small circle at the center for better visibility
+    display.fillCircle(x, y, 2, GxEPD_BLACK);
+}
 
 void displayWeather(Weather& weather) {
     Serial.println("Updating display...");
@@ -60,6 +88,14 @@ void displayWeather(Weather& weather) {
     
     display.setCursor(10, 125);
     display.println(weather.getWindText());
+    
+    // Draw wind direction indicator
+    // Place it on the right-most side of the display aligned with the weather data
+    int radius = 25; // Circle radius
+    int padding = 10; // Padding from the edge
+    int windDirX = display.width() - radius - padding; // Right side with padding
+    int windDirY = 100; // Between weather and wind text (vertically aligned with weather data)
+    drawWindDirectionIndicator(windDirX, windDirY, radius, weather.getWindDirection());
     
     // Update the entire display
     display.displayWindow(0, 0, display.width(), display.height());
