@@ -6,6 +6,8 @@
 #include <ArduinoJson.h>
 #include "battery.h"
 #include "wifi_connection.h"
+#include <Fonts/FreeSans9pt7b.h>  // Smaller font for general text
+#include <Fonts/FreeSans12pt7b.h> // Larger font for weather data
 
 // Define pins for the display
 #define EPD_CS 5
@@ -114,33 +116,27 @@ void updateDisplay() {
     // Clear the entire display first with white
     display.fillScreen(GxEPD_WHITE);
     
-    // Set text properties
-    display.setTextColor(GxEPD_BLACK);
-    display.setTextSize(2);
-    
-    // Display battery status with dark gray background
-    // display.fillRect(0, 0, display.width(), 30, GxEPD_LIGHTGREY);
+    // Use smaller font for battery status
+    display.setFont(&FreeSans9pt7b);
     display.setTextColor(GxEPD_LIGHTGREY);
     display.setCursor(10, 20);
     display.print("Battery: ");
     display.println(getBatteryStatus());
     
     if (wifi.isConnected()) {
-        // Display last update time with light gray background
-        // display.fillRect(0, 30, display.width(), 30, GxEPD_DARKGREY);
-        display.setTextColor(GxEPD_BLACK);
-        display.setCursor(10, 50);
+        // Display last update time with smaller font
+        display.setCursor(10, 45);
         display.print("Last update: ");
         display.println(lastUpdateTime);
         
-        // Display weather with white background
-        // display.fillRect(0, 60, display.width(), 40, GxEPD_WHITE);
-        display.setCursor(10, 90);
+        // Use larger font for weather data
+        display.setTextColor(GxEPD_BLACK);
+        display.setFont(&FreeSans12pt7b);
+        display.setCursor(10, 80);  // Adjusted position for larger font
         display.println(weatherData);
         
-        // Display wind speed with light gray background
-        // display.fillRect(0, 100, display.width(), 40, GxEPD_LIGHTGREY);
-        display.setCursor(10, 120);
+        // Keep larger font for wind data
+        display.setCursor(10, 115);  // Adjusted position for second line of larger font
         display.println(windData);
     }
     
@@ -159,6 +155,7 @@ void setup() {
     // Initialize display with 115200 baud rate
     display.init(115200);
     display.setRotation(1);
+    display.setFont(&FreeSans9pt7b);  // Use smaller font for initial setup
     display.fillScreen(GxEPD_WHITE);
     display.displayWindow(0, 0, display.width(), display.height());
     display.hibernate();
