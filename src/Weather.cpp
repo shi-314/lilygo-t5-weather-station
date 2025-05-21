@@ -23,6 +23,7 @@ void Weather::update() {
         weatherData = "Weather error";
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
+        hourlyTime.clear();
         http.end();
         return;
     }
@@ -37,6 +38,7 @@ void Weather::update() {
         weatherData = "JSON error";
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
+        hourlyTime.clear();
         http.end();
         return;
     }
@@ -51,6 +53,7 @@ void Weather::update() {
     // Clear previous hourly data
     hourlyTemperatures.clear();
     hourlyWindSpeeds.clear();
+    hourlyTime.clear();
 
     // Parse hourly temperature data
     JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
@@ -62,6 +65,14 @@ void Weather::update() {
     JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
     for (JsonVariant v : hourly_wind_array) {
         hourlyWindSpeeds.push_back(v.as<float>());
+    }
+
+    // Parse hourly time data
+    JsonArray hourly_time_array = doc["hourly"]["time"].as<JsonArray>();
+    for (JsonVariant v : hourly_time_array) {
+        String fullTimestamp = v.as<String>();
+        // Extract just HH:MM for display
+        hourlyTime.push_back(fullTimestamp.substring(11, 16)); 
     }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
@@ -121,4 +132,8 @@ std::vector<float> Weather::getHourlyTemperatures() const {
 
 std::vector<float> Weather::getHourlyWindSpeeds() const {
     return hourlyWindSpeeds;
+}
+
+std::vector<String> Weather::getHourlyTime() const {
+    return hourlyTime;
 } 

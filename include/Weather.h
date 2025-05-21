@@ -21,6 +21,7 @@ public:
     int getWindDirection() const;
     std::vector<float> getHourlyTemperatures() const;
     std::vector<float> getHourlyWindSpeeds() const;
+    std::vector<String> getHourlyTime() const;
 
 private:
     // API settings
@@ -38,6 +39,7 @@ private:
     
     std::vector<float> hourlyTemperatures;
     std::vector<float> hourlyWindSpeeds;
+    std::vector<String> hourlyTime;
     
     String getWeatherDescription(int weatherCode) const;
 }; 
