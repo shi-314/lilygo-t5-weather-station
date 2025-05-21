@@ -69,18 +69,21 @@ void displayWeather(Weather& weather) {
     display.setFont(&FreeSans9pt7b);
     display.setTextColor(GxEPD_LIGHTGREY);
     String batteryStatus = getBatteryStatus();
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(batteryStatus, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor(display.width() - w - 5, h + 5); // 5px padding from top and right
+    int16_t x1_batt, y1_batt;
+    uint16_t w_batt, h_batt;
+    display.getTextBounds(batteryStatus, 0, 0, &x1_batt, &y1_batt, &w_batt, &h_batt);
+    display.setCursor(display.width() - w_batt - 5, h_batt + 5); // 5px padding from top and right
     display.print(batteryStatus);
-    
-    display.setFont(&FreeSans9pt7b);
-    display.setTextColor(GxEPD_LIGHTGREY);
 
-    display.setCursor(10, 45);
-    display.print("Last update: ");
-    display.println(weather.getLastUpdateTime());
+    // Display Last Update Time at top left
+    display.setFont(&FreeSans9pt7b); // Ensure correct font
+    display.setTextColor(GxEPD_LIGHTGREY); // Ensure correct color
+    String lastUpdateTime = weather.getLastUpdateTime();
+    int16_t x1_time, y1_time;
+    uint16_t w_time, h_time;
+    display.getTextBounds(lastUpdateTime, 0, 0, &x1_time, &y1_time, &w_time, &h_time);
+    display.setCursor(5, h_time + 5); // 5px padding from top and left
+    display.print(lastUpdateTime);
     
     display.setTextColor(GxEPD_BLACK);
     display.setFont(&FreeSans12pt7b);
