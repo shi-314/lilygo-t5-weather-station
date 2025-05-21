@@ -32,6 +32,19 @@ void displayWifiErrorIcon();
 void drawWindDirectionIndicator(int x, int y, int radius, int direction);
 void drawMeteogram(Weather& weather, int x, int y, int w, int h);
 
+// Helper function to parse HH:MM string to minutes from midnight
+int parseHHMMtoMinutes(const String& hhmm) {
+    if (hhmm.length() != 5 || hhmm.charAt(2) != ':') {
+        return -1; // Invalid format
+    }
+    int hours = hhmm.substring(0, 2).toInt();
+    int minutes = hhmm.substring(3, 5).toInt();
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        return -1; // Invalid time
+    }
+    return hours * 60 + minutes;
+}
+
 void drawWindDirectionIndicator(int x, int y, int radius, int direction) {
     display.drawCircle(x, y, radius, GxEPD_LIGHTGREY);
     
@@ -120,8 +133,6 @@ void displayWeather(Weather& weather) {
 
 void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
     // Attempt to use a very small font if available, otherwise default to 9pt
-    // For now, we'll stick to FreeSans9pt7b as we couldn't confirm a smaller one.
-    // If you have a e.g. FreeSans6pt7b, replace &FreeSans9pt7b below.
     const GFXfont* labelFont = &FreeSans9pt7b; 
     display.setFont(labelFont);
     std::vector<float> temps = weather.getHourlyTemperatures();
@@ -135,24 +146,45 @@ void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
     }
 
     int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)times.size(), 24});
-    if (num_points <= 1) { // Need at least 2 points to draw lines and meaningful axes
+    if (num_points <= 1) { 
         display.setCursor(x_base, y_base + h / 2);
         display.print("Not enough data.");
         return;
     }
 
     // Define padding for labels
-    int y_label_padding = 15; // Space for Y labels on the left
-    int x_label_padding = 15; // Space for X labels at the bottom
-    int plot_x = x_base + y_label_padding;
-    int plot_y = y_base;
-    int plot_w = w - y_label_padding;
-    int plot_h = h - x_label_padding;
+    uint16_t temp_label_max_width = 0;
+    uint16_t wind_label_max_width = 0;
+    uint16_t text_h_val; 
+    int16_t x1_bounds_val, y1_bounds_val; 
+    uint16_t w_val;
+    
+    // Pre-calculate max label widths for precise padding
+    String temp_max_str_for_width = String(temps[0],0); // Placeholder for width calc
+    display.getTextBounds(temp_max_str_for_width, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+    temp_label_max_width = w_val + 3; // text width + 3px padding
 
-    if (plot_w <= 0 || plot_h <= 0) return; // Not enough space to draw
+    String wind_max_str_for_width = String(winds[0],0); // Placeholder
+    display.getTextBounds(wind_max_str_for_width, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+    wind_label_max_width = w_val + 3; // text width + 3px padding
+
+    int y_label_padding_left = temp_label_max_width;
+    int y_label_padding_right = wind_label_max_width;
+    int x_label_padding_bottom = text_h_val + 3; // text height + 3px padding
+
+    int plot_x = x_base + y_label_padding_left;
+    int plot_y = y_base;
+    int plot_w = w - y_label_padding_left - y_label_padding_right;
+    int plot_h = h - x_label_padding_bottom;
+
+    if (plot_w <= 20 || plot_h <= 10) { // Check for minimal drawable area
+         display.setCursor(x_base, y_base + h / 2);
+         display.print("Too small for graph.");
+        return; 
+    }
 
     float min_temp = temps[0], max_temp = temps[0];
-    float min_wind = winds[0], max_wind = winds[0]; // Wind scale might differ
+    float min_wind = winds[0], max_wind = winds[0];
 
     for (int i = 1; i < num_points; ++i) {
         if (temps[i] < min_temp) min_temp = temps[i];
@@ -163,40 +195,54 @@ void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
     if (max_temp == min_temp) max_temp += 1.0f;
     if (max_wind == min_wind) max_wind += 1.0f;
 
-    // Draw a border for the meteogram plot area
     display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
 
-    float x_step = (float)plot_w / (num_points -1); // num_points-1 segments
+    float x_step = (num_points > 1) ? (float)plot_w / (num_points - 1) : 0;
 
-    // Y-axis labels (3 values for temperature: min, mid, max)
     display.setTextColor(GxEPD_BLACK);
     display.setFont(labelFont);
-    String min_temp_str = String(min_temp, 0);
-    String mid_temp_str = String((min_temp + max_temp) / 2, 0);
-    String max_temp_str = String(max_temp, 0);
-    
-    uint16_t text_h_val; // Renamed to avoid conflict if w is a global or member
-    int16_t x1_bounds_val, y1_bounds_val; 
-    uint16_t w_val;
-    display.getTextBounds(max_temp_str, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val); // Get height of text
 
-    display.setCursor(x_base, plot_y + text_h_val); // Align text top
+    // Y-axis labels (Temperature - Left)
+    String min_temp_str = String(min_temp, 0);
+    String max_temp_str = String(max_temp, 0);
+    display.getTextBounds(max_temp_str, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+    display.setCursor(x_base + y_label_padding_left - w_val -3 , plot_y + text_h_val); 
     display.print(max_temp_str);
-    display.setCursor(x_base, plot_y + plot_h / 2 + text_h_val / 2);
-    display.print(mid_temp_str);
-    display.setCursor(x_base, plot_y + plot_h);
+    display.getTextBounds(min_temp_str, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+    display.setCursor(x_base + y_label_padding_left - w_val -3, plot_y + plot_h); 
     display.print(min_temp_str);
 
-    // X-axis labels (6 time values)
-    int num_x_labels = std::min(num_points, 6);
-    for (int i = 0; i < num_x_labels; ++i) {
-        int data_idx = (num_points -1) * i / (num_x_labels -1) ; // Distribute labels across available points
-        if (data_idx >= times.size()) data_idx = times.size() -1;
-        String time_label = times[data_idx];
-        display.getTextBounds(time_label, 0,0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
-        int label_x = plot_x + round(data_idx * x_step) - w_val/2; // Center label
-        display.setCursor(label_x, plot_y + plot_h + text_h_val + 2); // Position below X-axis
-        display.print(time_label);
+    // Y-axis labels (Wind - Right)
+    String min_wind_str = String(min_wind, 0);
+    String max_wind_str = String(max_wind, 0);
+    display.getTextBounds(max_wind_str, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+    display.setCursor(plot_x + plot_w + 3, plot_y + text_h_val);
+    display.print(max_wind_str);
+    display.getTextBounds(min_wind_str, 0, 0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+    display.setCursor(plot_x + plot_w + 3, plot_y + plot_h);
+    display.print(min_wind_str);
+
+    // X-axis labels (max 2 time values)
+    int num_x_labels = std::min(num_points, 2);
+    if (num_x_labels > 0) {
+        for (int i = 0; i < num_x_labels; ++i) {
+            int data_idx;
+            if (num_x_labels == 1) { 
+                data_idx = 0;
+            } else { 
+                data_idx = round((float)(num_points - 1) * i / (num_x_labels - 1));
+            }
+            if (data_idx >= times.size()) data_idx = times.size() -1;
+            if (data_idx < 0) data_idx = 0;
+
+            String time_label = times[data_idx];
+            display.getTextBounds(time_label, 0,0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
+            int label_x_pos = plot_x + round(data_idx * x_step) - w_val/2;
+            if (label_x_pos < plot_x) label_x_pos = plot_x;
+            if (label_x_pos + w_val > plot_x + plot_w) label_x_pos = plot_x + plot_w - w_val;
+            display.setCursor(label_x_pos, plot_y + plot_h + x_label_padding_bottom -1); // Use pre-calc height for consistent spacing
+            display.print(time_label);
+        }
     }
 
     // Plot Temperatures
@@ -205,18 +251,67 @@ void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
         int y1_temp = plot_y + plot_h - round(((temps[i] - min_temp) / (max_temp - min_temp)) * plot_h);
         int x2 = plot_x + round((i + 1) * x_step);
         int y2_temp = plot_y + plot_h - round(((temps[i+1] - min_temp) / (max_temp - min_temp)) * plot_h);
+        if (y1_temp < plot_y) y1_temp = plot_y; if (y1_temp > plot_y + plot_h) y1_temp = plot_y + plot_h; // Clip to bounds
+        if (y2_temp < plot_y) y2_temp = plot_y; if (y2_temp > plot_y + plot_h) y2_temp = plot_y + plot_h; // Clip to bounds
         display.drawLine(x1, y1_temp, x2, y2_temp, GxEPD_BLACK);
     }
 
-    // Plot Wind Speeds (using the same Y scale as temperature for simplicity now)
+    // Plot Wind Speeds (now scaled independently)
     for (int i = 0; i < num_points - 1; ++i) {
         int x1 = plot_x + round(i * x_step);
-        // Scale wind speed relative to temperature range for now - this might not be ideal
-        // A secondary Y axis or different scaling would be better in a more complex chart
-        int y1_wind = plot_y + plot_h - round(((winds[i] - min_temp) / (max_temp - min_temp)) * plot_h);
+        int y1_wind = plot_y + plot_h - round(((winds[i] - min_wind) / (max_wind - min_wind)) * plot_h);
         int x2 = plot_x + round((i + 1) * x_step);
-        int y2_wind = plot_y + plot_h - round(((winds[i+1] - min_temp) / (max_temp - min_temp)) * plot_h);
-        display.drawLine(x1, y1_wind, x2, y2_wind, GxEPD_DARKGREY);
+        int y2_wind = plot_y + plot_h - round(((winds[i+1] - min_wind) / (max_wind - min_wind)) * plot_h);
+        if (y1_wind < plot_y) y1_wind = plot_y; if (y1_wind > plot_y + plot_h) y1_wind = plot_y + plot_h; // Clip
+        if (y2_wind < plot_y) y2_wind = plot_y; if (y2_wind > plot_y + plot_h) y2_wind = plot_y + plot_h; // Clip
+        display.drawLine(x1, y1_wind, x2, y2_wind, GxEPD_DARKGREY); 
+    }
+
+    // Draw vertical line for lastUpdateTime
+    String lastUpdateStr = weather.getLastUpdateTime();
+    int lastUpdateMinutes = parseHHMMtoMinutes(lastUpdateStr);
+
+    if (lastUpdateMinutes != -1 && num_points > 0 && times.size() > 0) { // Added times.size() check
+        int firstHourMinutes = parseHHMMtoMinutes(times[0]);
+        if (firstHourMinutes != -1 && lastUpdateMinutes >= firstHourMinutes) {
+            for (int i = 0; i < num_points; ++i) {
+                if (i >= times.size()) break; // Safety break
+                int currentPointMinutes = parseHHMMtoMinutes(times[i]);
+                if (currentPointMinutes == -1) continue;
+
+                if (i + 1 < num_points && (i+1) < times.size()) { // Safety for times access
+                    int nextPointMinutes = parseHHMMtoMinutes(times[i+1]);
+                    if (nextPointMinutes == -1) continue;
+                    
+                    if (currentPointMinutes == nextPointMinutes) { // Avoid division by zero if times are identical
+                         if (lastUpdateMinutes == currentPointMinutes) {
+                            int line_x = round(plot_x + i * x_step);
+                            if (line_x >= plot_x && line_x <= plot_x + plot_w) {
+                                display.drawFastVLine(line_x, plot_y, plot_h, GxEPD_BLACK);
+                            }
+                            break;
+                        }
+                        continue; // Move to next point if times are same but not matching lastUpdateMinutes
+                    }
+
+                    if (lastUpdateMinutes >= currentPointMinutes && lastUpdateMinutes < nextPointMinutes) {
+                        float fraction = (float)(lastUpdateMinutes - currentPointMinutes) / (nextPointMinutes - currentPointMinutes);
+                        int line_x = round((plot_x + i * x_step) + fraction * x_step);
+                        if (line_x >= plot_x && line_x <= plot_x + plot_w) {
+                            display.drawFastVLine(line_x, plot_y, plot_h, GxEPD_BLACK);
+                        }
+                        break;
+                    }
+                }
+                if (lastUpdateMinutes == currentPointMinutes) {
+                    int line_x = round(plot_x + i * x_step);
+                     if (line_x >= plot_x && line_x <= plot_x + plot_w) {
+                        display.drawFastVLine(line_x, plot_y, plot_h, GxEPD_BLACK);
+                    }
+                    break;
+                }
+            }
+        }
     }
 }
 
