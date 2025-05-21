@@ -65,14 +65,16 @@ void displayWeather(Weather& weather) {
     display.setRotation(1);
     display.fillScreen(GxEPD_WHITE);
 
+    // Display Battery Status at top right
     display.setFont(&FreeSans9pt7b);
     display.setTextColor(GxEPD_LIGHTGREY);
-
-    display.setCursor(10, 20);
-    display.print("Battery: ");
-    display.println(getBatteryStatus());
+    String batteryStatus = getBatteryStatus();
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(batteryStatus, 0, 0, &x1, &y1, &w, &h);
+    display.setCursor(display.width() - w - 5, h + 5); // 5px padding from top and right
+    display.print(batteryStatus);
     
-    // Only called when WiFi is connected
     display.setFont(&FreeSans9pt7b);
     display.setTextColor(GxEPD_LIGHTGREY);
 

@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <vector>
 
 // Forward declaration (actual WiFiConnection is expected to be defined elsewhere)
 class WiFiConnection;
@@ -18,6 +19,8 @@ public:
     String getLastUpdateTime() const;
     bool isTimeToUpdate(unsigned long currentMillis) const;
     int getWindDirection() const;
+    std::vector<float> getHourlyTemperatures() const;
+    std::vector<float> getHourlyWindSpeeds() const;
 
 private:
     // API settings
@@ -32,6 +35,9 @@ private:
     unsigned long lastWeatherUpdate = 0;
     const unsigned long updateInterval = 300000; // Update weather every 5 minutes
     int windDirection = 0;
+    
+    std::vector<float> hourlyTemperatures;
+    std::vector<float> hourlyWindSpeeds;
     
     String getWeatherDescription(int weatherCode) const;
 }; 

@@ -12,6 +12,7 @@ void Weather::update() {
                 "&longitude=" + String(longitude, 6) + 
                 "&current_weather=true" +
                 "&current=wind_speed_10m" +
+                "&hourly=temperature_2m,wind_speed_10m" +
                 "&timezone=auto";
     
     http.begin(url);
@@ -20,19 +21,22 @@ void Weather::update() {
     if (httpCode != HTTP_CODE_OK) {
         Serial.println("Failed to get weather data");
         weatherData = "Weather error";
+        hourlyTemperatures.clear();
+        hourlyWindSpeeds.clear();
         http.end();
         return;
     }
 
     String payload = http.getString();
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(16384);
     DeserializationError error = deserializeJson(doc, payload);
-    Serial.println(payload);
     
     if (error) {
         Serial.print("JSON parsing failed: ");
         Serial.println(error.c_str());
         weatherData = "JSON error";
+        hourlyTemperatures.clear();
+        hourlyWindSpeeds.clear();
         http.end();
         return;
     }
@@ -43,6 +47,22 @@ void Weather::update() {
     float windSpeed = doc["current_weather"]["windspeed"];
     String windSpeedUnit = doc["current_weather_units"]["windspeed"];
     windDirection = doc["current_weather"]["winddirection"];
+    
+    // Clear previous hourly data
+    hourlyTemperatures.clear();
+    hourlyWindSpeeds.clear();
+
+    // Parse hourly temperature data
+    JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
+    for (JsonVariant v : hourly_temp_array) {
+        hourlyTemperatures.push_back(v.as<float>());
+    }
+
+    // Parse hourly wind speed data
+    JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
+    for (JsonVariant v : hourly_wind_array) {
+        hourlyWindSpeeds.push_back(v.as<float>());
+    }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
     windData = String(windSpeed, 1) + " " + windSpeedUnit;
@@ -93,4 +113,12 @@ bool Weather::isTimeToUpdate(unsigned long currentMillis) const {
 
 int Weather::getWindDirection() const {
     return windDirection;
+}
+
+std::vector<float> Weather::getHourlyTemperatures() const {
+    return hourlyTemperatures;
+}
+
+std::vector<float> Weather::getHourlyWindSpeeds() const {
+    return hourlyWindSpeeds;
 } 
