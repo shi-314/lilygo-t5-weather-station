@@ -7,6 +7,7 @@
 #include "Weather.h"
 #include <Fonts/FreeSans9pt7b.h>  // Smaller font for general text
 #include <Fonts/FreeSans12pt7b.h> // Larger font for weather data
+#include "Fonts/Picopixel.h" // Font for meteogram labels
 #include "boards.h"  // Include for LED pin definition
 #include "assets/WifiErrorIcon.h"
 
@@ -89,16 +90,6 @@ void displayWeather(Weather& weather) {
     display.setCursor(display.width() - w_batt - 3, h_batt + 3); // Reduced padding to 3px
     display.print(batteryStatus);
 
-    // Display Last Update Time at top left
-    display.setFont(&FreeSans9pt7b); // Ensure correct font
-    display.setTextColor(GxEPD_LIGHTGREY); // Ensure correct color
-    String lastUpdateTime = weather.getLastUpdateTime();
-    int16_t x1_time, y1_time;
-    uint16_t w_time, h_time;
-    display.getTextBounds(lastUpdateTime, 0, 0, &x1_time, &y1_time, &w_time, &h_time);
-    display.setCursor(3, h_time + 3); // Reduced padding to 3px
-    display.print(lastUpdateTime);
-    
     display.setTextColor(GxEPD_BLACK);
     display.setFont(&FreeSans12pt7b);
 
@@ -133,7 +124,7 @@ void displayWeather(Weather& weather) {
 
 void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
     // Attempt to use a very small font if available, otherwise default to 9pt
-    const GFXfont* labelFont = &FreeSans9pt7b; 
+    const GFXfont* labelFont = nullptr; // Use the default small font
     display.setFont(labelFont);
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
@@ -222,29 +213,6 @@ void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
     display.setCursor(plot_x + plot_w + 3, plot_y + plot_h);
     display.print(min_wind_str);
 
-    // X-axis labels (max 2 time values)
-    int num_x_labels = std::min(num_points, 2);
-    if (num_x_labels > 0) {
-        for (int i = 0; i < num_x_labels; ++i) {
-            int data_idx;
-            if (num_x_labels == 1) { 
-                data_idx = 0;
-            } else { 
-                data_idx = round((float)(num_points - 1) * i / (num_x_labels - 1));
-            }
-            if (data_idx >= times.size()) data_idx = times.size() -1;
-            if (data_idx < 0) data_idx = 0;
-
-            String time_label = times[data_idx];
-            display.getTextBounds(time_label, 0,0, &x1_bounds_val, &y1_bounds_val, &w_val, &text_h_val);
-            int label_x_pos = plot_x + round(data_idx * x_step) - w_val/2;
-            if (label_x_pos < plot_x) label_x_pos = plot_x;
-            if (label_x_pos + w_val > plot_x + plot_w) label_x_pos = plot_x + plot_w - w_val;
-            display.setCursor(label_x_pos, plot_y + plot_h + x_label_padding_bottom -1); // Use pre-calc height for consistent spacing
-            display.print(time_label);
-        }
-    }
-
     // Plot Temperatures
     for (int i = 0; i < num_points - 1; ++i) {
         int x1 = plot_x + round(i * x_step);
@@ -267,51 +235,71 @@ void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
         display.drawLine(x1, y1_wind, x2, y2_wind, GxEPD_DARKGREY); 
     }
 
-    // Draw vertical line for lastUpdateTime
+    // Draw vertical line and last update time for lastUpdateTime
     String lastUpdateStr = weather.getLastUpdateTime();
     int lastUpdateMinutes = parseHHMMtoMinutes(lastUpdateStr);
+    int final_line_x = -1; // Store the calculated x-position for the line
 
-    if (lastUpdateMinutes != -1 && num_points > 0 && times.size() > 0) { // Added times.size() check
+    if (lastUpdateMinutes != -1 && num_points > 0 && times.size() > 0) {
         int firstHourMinutes = parseHHMMtoMinutes(times[0]);
         if (firstHourMinutes != -1 && lastUpdateMinutes >= firstHourMinutes) {
             for (int i = 0; i < num_points; ++i) {
-                if (i >= times.size()) break; // Safety break
+                if (i >= times.size()) break; // Safety break for times access
                 int currentPointMinutes = parseHHMMtoMinutes(times[i]);
                 if (currentPointMinutes == -1) continue;
 
-                if (i + 1 < num_points && (i+1) < times.size()) { // Safety for times access
+                bool found_position = false;
+                if (i + 1 < num_points && (i + 1) < times.size()) { // Check if there's a next point to form an interval
                     int nextPointMinutes = parseHHMMtoMinutes(times[i+1]);
                     if (nextPointMinutes == -1) continue;
                     
-                    if (currentPointMinutes == nextPointMinutes) { // Avoid division by zero if times are identical
+                    if (currentPointMinutes == nextPointMinutes) { // Avoid division by zero if times are identical for segment
                          if (lastUpdateMinutes == currentPointMinutes) {
-                            int line_x = round(plot_x + i * x_step);
-                            if (line_x >= plot_x && line_x <= plot_x + plot_w) {
-                                display.drawFastVLine(line_x, plot_y, plot_h, GxEPD_BLACK);
-                            }
-                            break;
+                            final_line_x = round(plot_x + i * x_step);
+                            found_position = true;
                         }
-                        continue; // Move to next point if times are same but not matching lastUpdateMinutes
-                    }
-
-                    if (lastUpdateMinutes >= currentPointMinutes && lastUpdateMinutes < nextPointMinutes) {
+                    } else if (lastUpdateMinutes >= currentPointMinutes && lastUpdateMinutes < nextPointMinutes) {
+                        // Interpolate position within the segment
                         float fraction = (float)(lastUpdateMinutes - currentPointMinutes) / (nextPointMinutes - currentPointMinutes);
-                        int line_x = round((plot_x + i * x_step) + fraction * x_step);
-                        if (line_x >= plot_x && line_x <= plot_x + plot_w) {
-                            display.drawFastVLine(line_x, plot_y, plot_h, GxEPD_BLACK);
-                        }
-                        break;
+                        final_line_x = round((plot_x + i * x_step) + fraction * x_step);
+                        found_position = true;
                     }
+                } else if (lastUpdateMinutes == currentPointMinutes) { // Exactly at the current (last) point
+                     final_line_x = round(plot_x + i * x_step);
+                     found_position = true;
                 }
-                if (lastUpdateMinutes == currentPointMinutes) {
-                    int line_x = round(plot_x + i * x_step);
-                     if (line_x >= plot_x && line_x <= plot_x + plot_w) {
-                        display.drawFastVLine(line_x, plot_y, plot_h, GxEPD_BLACK);
-                    }
-                    break;
+                
+                if (found_position) {
+                    break; // Exit loop once position is found
                 }
             }
         }
+    }
+
+    if (final_line_x != -1 && final_line_x >= plot_x && final_line_x <= plot_x + plot_w) {
+        display.drawFastVLine(final_line_x, plot_y, plot_h, GxEPD_BLACK);
+
+        // Draw the last update time string below the line
+        // display.setFont(labelFont); // Font is already set at the beginning of drawMeteogram
+        // display.setTextColor(GxEPD_BLACK); // Color is also set
+
+        int16_t x1_time_val, y1_time_val;
+        uint16_t w_time_val, h_time_val;
+        display.getTextBounds(lastUpdateStr, 0, 0, &x1_time_val, &y1_time_val, &w_time_val, &h_time_val);
+        
+        // Center the text under the line
+        int time_label_x = final_line_x - w_time_val / 2;
+
+        // Constrain x position to be within the meteogram base area
+        if (time_label_x < x_base) time_label_x = x_base;
+        if (time_label_x + w_time_val > x_base + w) time_label_x = x_base + w - w_time_val;
+
+        // text_h_val was font height, x_label_padding_bottom used it.
+        // y position for the text, similar to where former x-axis labels were
+        int time_label_y = plot_y + plot_h + x_label_padding_bottom -10; 
+
+        display.setCursor(time_label_x, time_label_y);
+        display.print(lastUpdateStr);
     }
 }
 
