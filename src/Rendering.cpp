@@ -32,7 +32,7 @@ void Rendering::displayWeather(Weather& weather) {
 
     // Display Battery Status at top right
     display.setFont(nullptr);
-    display.setTextColor(GxEPD_DARKGREY;
+    display.setTextColor(GxEPD_DARKGREY);
     String batteryStatus = getBatteryStatus();
     int16_t x1_batt, y1_batt;
     uint16_t w_batt, h_batt;
