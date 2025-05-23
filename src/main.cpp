@@ -81,39 +81,38 @@ void displayWeather(Weather& weather) {
     display.fillScreen(GxEPD_WHITE);
 
     // Display Battery Status at top right
-    display.setFont(&FreeSans9pt7b);
+    display.setFont(nullptr);
     display.setTextColor(GxEPD_LIGHTGREY);
     String batteryStatus = getBatteryStatus();
     int16_t x1_batt, y1_batt;
     uint16_t w_batt, h_batt;
     display.getTextBounds(batteryStatus, 0, 0, &x1_batt, &y1_batt, &w_batt, &h_batt);
-    display.setCursor(display.width() - w_batt - 3, h_batt + 3); // Reduced padding to 3px
+    display.setCursor(display.width() - w_batt - 3, 6);
     display.print(batteryStatus);
 
     display.setTextColor(GxEPD_BLACK);
     display.setFont(&FreeSans12pt7b);
 
     // Position current weather and wind text higher and more compactly
-    int current_weather_y = h_batt + 3 + 18; // Start below battery/time, with some spacing
-    display.setCursor(10, current_weather_y);
+    int current_weather_y = 24; 
+    display.setCursor(6, current_weather_y);
     display.println(weather.getWeatherText());
     
-    int wind_text_y = current_weather_y + 18; // Position wind text below current weather
-    display.setCursor(10, wind_text_y);
+    int wind_text_y = current_weather_y + 24;
+    display.setCursor(0, wind_text_y);
     display.println(weather.getWindText());
     
     // Draw wind direction indicator, aligned with wind text
-    int radius = 12; // Slightly smaller radius
-    int padding = 5;
-    int windDirX = display.width() - radius - padding;
-    int windDirY = wind_text_y - 6; // Align vertically with wind text line
+    int radius = 12; 
+    int windDirX = display.width() - radius - 6;
+    int windDirY = y1_batt + h_batt + 24;
     drawWindDirectionIndicator(windDirX, windDirY, radius, weather.getWindDirection());
 
     // Define Meteogram Area (below current weather, using more height)
-    int meteogramX = 5; // Start a bit to the left
-    int meteogramY = wind_text_y + 15; // Start below wind text with some padding
-    int meteogramW = display.width() - 10; // Use more width
-    int meteogramH = display.height() - meteogramY - 3; // Maximize height, 3px bottom margin
+    int meteogramX = 0;
+    int meteogramY = wind_text_y + 10;
+    int meteogramW = display.width();
+    int meteogramH = display.height() - meteogramY - 3; 
     drawMeteogram(weather, meteogramX, meteogramY, meteogramW, meteogramH);
     
     // Update the entire display
@@ -296,7 +295,7 @@ void drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
 
         // text_h_val was font height, x_label_padding_bottom used it.
         // y position for the text, similar to where former x-axis labels were
-        int time_label_y = plot_y + plot_h + x_label_padding_bottom -10; 
+        int time_label_y = plot_y + plot_h + x_label_padding_bottom -5; 
 
         display.setCursor(time_label_x, time_label_y);
         display.print(lastUpdateStr);
