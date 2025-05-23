@@ -157,7 +157,7 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     // Draw Y-axis labels
     String temp_labels[] = {String(max_temp, 0), String(min_temp, 0)};
     String wind_labels[] = {String(max_wind, 0), String(min_wind, 0)};
-    int y_positions[] = {plot_y + label_h, plot_y + plot_h};
+    int y_positions[] = {plot_y, plot_y + plot_h};
     
     for (int i = 0; i < 2; i++) {
         // Temperature labels (left)
@@ -228,7 +228,7 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
         // Draw the last update time string below the line
         display.getTextBounds(lastUpdateStr, 0, 0, &x1, &y1, &label_w, &label_h);
         int time_x = constrain(final_line_x - label_w / 2, x_base, x_base + w - label_w);
-        display.setCursor(time_x, plot_y + plot_h + bottom_padding - 3);
+        display.setCursor(time_x, plot_y + plot_h + bottom_padding - 6);
         display.print(lastUpdateStr);
     }
 }
