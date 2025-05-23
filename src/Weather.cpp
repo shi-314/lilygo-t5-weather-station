@@ -12,7 +12,7 @@ void Weather::update() {
                 "&longitude=" + String(longitude, 6) + 
                 "&current_weather=true" +
                 "&current=wind_speed_10m" +
-                "&hourly=temperature_2m,wind_speed_10m" +
+                "&hourly=temperature_2m,wind_speed_10m,precipitation" +
                 "&timezone=auto";
     
     http.begin(url);
@@ -24,6 +24,7 @@ void Weather::update() {
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
         hourlyTime.clear();
+        hourlyPrecipitation.clear();
         http.end();
         return;
     }
@@ -39,6 +40,7 @@ void Weather::update() {
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
         hourlyTime.clear();
+        hourlyPrecipitation.clear();
         http.end();
         return;
     }
@@ -58,6 +60,7 @@ void Weather::update() {
     hourlyTemperatures.clear();
     hourlyWindSpeeds.clear();
     hourlyTime.clear();
+    hourlyPrecipitation.clear();
 
     // Parse hourly temperature data
     JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
@@ -77,6 +80,12 @@ void Weather::update() {
         String fullTimestamp = v.as<String>();
         // Extract just HH:MM for display
         hourlyTime.push_back(fullTimestamp.substring(11, 16)); 
+    }
+
+    // Parse hourly precipitation data
+    JsonArray hourly_precipitation_array = doc["hourly"]["precipitation"].as<JsonArray>();
+    for (JsonVariant v : hourly_precipitation_array) {
+        hourlyPrecipitation.push_back(v.as<float>());
     }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
@@ -140,6 +149,10 @@ std::vector<float> Weather::getHourlyWindSpeeds() const {
 
 std::vector<String> Weather::getHourlyTime() const {
     return hourlyTime;
+}
+
+std::vector<float> Weather::getHourlyPrecipitation() const {
+    return hourlyPrecipitation;
 }
 
 float Weather::getCurrentTemperature() const {
