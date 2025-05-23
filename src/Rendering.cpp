@@ -32,7 +32,7 @@ void Rendering::displayWeather(Weather& weather) {
 
     // Display Battery Status at top right
     display.setFont(nullptr);
-    display.setTextColor(GxEPD_LIGHTGREY);
+    display.setTextColor(GxEPD_DARKGREY;
     String batteryStatus = getBatteryStatus();
     int16_t x1_batt, y1_batt;
     uint16_t w_batt, h_batt;
@@ -88,14 +88,15 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
     std::vector<String> times = weather.getHourlyTime();
+    std::vector<float> precipitation = weather.getHourlyPrecipitation();
 
-    if (temps.empty() || winds.empty() || times.empty()) {
+    if (temps.empty() || winds.empty() || times.empty() || precipitation.empty()) {
         display.setCursor(x_base, y_base + h / 2);
         display.print("No meteogram data.");
         return;
     }
 
-    int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)times.size(), 24});
+    int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)times.size(), (int)precipitation.size(), 24});
     if (num_points <= 1) { 
         display.setCursor(x_base, y_base + h / 2);
         display.print("Not enough data.");
@@ -107,10 +108,12 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     float max_temp = *std::max_element(temps.begin(), temps.begin() + num_points);
     float min_wind = *std::min_element(winds.begin(), winds.begin() + num_points);
     float max_wind = *std::max_element(winds.begin(), winds.begin() + num_points);
+    float max_precipitation = *std::max_element(precipitation.begin(), precipitation.begin() + num_points);
     
     // Ensure we have a range for scaling
     if (max_temp == min_temp) max_temp += 1.0f;
     if (max_wind == min_wind) max_wind += 1.0f;
+    if (max_precipitation == 0.0f) max_precipitation = 1.0f; // Prevent division by zero
 
     // Calculate label dimensions
     int16_t x1, y1;
@@ -137,6 +140,28 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
     
     float x_step = (float)plot_w / (num_points - 1);
+    
+    // Draw precipitation bars first (background)
+    for (int i = 0; i < num_points; ++i) {
+        if (precipitation[i] > 0.0f) {
+            int x_center = plot_x + round(i * x_step);
+            int bar_width = max(1, (int)(x_step * 0.6f)); // 60% of available width
+            int bar_height = round((precipitation[i] / max_precipitation) * plot_h);
+            
+            // Draw precipitation bar from bottom up
+            int bar_x = x_center - bar_width / 2;
+            int bar_y = plot_y + plot_h - bar_height;
+            
+            // Ensure bar stays within plot bounds
+            bar_x = constrain(bar_x, plot_x, plot_x + plot_w - bar_width);
+            bar_y = constrain(bar_y, plot_y, plot_y + plot_h);
+            bar_height = constrain(bar_height, 0, plot_y + plot_h - bar_y);
+            
+            // Fill rectangle with light gray
+            display.fillRect(bar_x, bar_y, bar_width, bar_height, GxEPD_LIGHTGREY);
+        }
+    }
+    
     display.setTextColor(GxEPD_BLACK);
 
     // Draw Y-axis labels
@@ -155,7 +180,7 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
         display.print(wind_labels[i]);
     }
 
-    // Plot both Temperature and Wind Speed lines
+    // Plot both Temperature and Wind Speed lines (over precipitation bars)
     for (int i = 0; i < num_points - 1; ++i) {
         int x1 = plot_x + round(i * x_step);
         int x2 = plot_x + round((i + 1) * x_step);
