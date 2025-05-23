@@ -99,7 +99,7 @@ void displayWeather(Weather& weather) {
     display.println(weather.getWeatherText());
     
     int wind_text_y = current_weather_y + 24;
-    display.setCursor(0, wind_text_y);
+    display.setCursor(6, wind_text_y);
     display.println(weather.getWindText());
     
     // Draw wind direction indicator, aligned with wind text
