@@ -74,9 +74,19 @@ void Rendering::displayWeather(Weather& weather) {
     int current_weather_y = 24; 
     display.setCursor(6, current_weather_y);
     
-    String weatherDisplay = String(weather.getCurrentTemperature(), 1) + " C " + weather.getWeatherDescription();
-    display.println(weatherDisplay);
+    String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " C";
+    display.print(temperatureDisplay);
     
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(temperatureDisplay, 0, 0, &x1, &y1, &w, &h);
+    
+    display.setFont(&FreeSans9pt7b);
+    display.setCursor(6 + w + 8, current_weather_y); // Add some spacing between temp and description
+    display.print(" " + weather.getWeatherDescription());
+    
+    display.setFont(&FreeSans12pt7b);
+
     int wind_text_y = current_weather_y + 24;
     display.setCursor(6, wind_text_y);
     
