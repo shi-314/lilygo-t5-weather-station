@@ -12,6 +12,7 @@ void Weather::update() {
                 "&longitude=" + String(longitude, 6) + 
                 "&current_weather=true" +
                 "&current=wind_speed_10m" +
+                "&hourly=temperature_2m,wind_speed_10m,precipitation" +
                 "&timezone=auto";
     
     http.begin(url);
@@ -20,19 +21,26 @@ void Weather::update() {
     if (httpCode != HTTP_CODE_OK) {
         Serial.println("Failed to get weather data");
         weatherData = "Weather error";
+        hourlyTemperatures.clear();
+        hourlyWindSpeeds.clear();
+        hourlyTime.clear();
+        hourlyPrecipitation.clear();
         http.end();
         return;
     }
 
     String payload = http.getString();
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(16384);
     DeserializationError error = deserializeJson(doc, payload);
-    Serial.println(payload);
     
     if (error) {
         Serial.print("JSON parsing failed: ");
         Serial.println(error.c_str());
         weatherData = "JSON error";
+        hourlyTemperatures.clear();
+        hourlyWindSpeeds.clear();
+        hourlyTime.clear();
+        hourlyPrecipitation.clear();
         http.end();
         return;
     }
@@ -43,6 +51,42 @@ void Weather::update() {
     float windSpeed = doc["current_weather"]["windspeed"];
     String windSpeedUnit = doc["current_weather_units"]["windspeed"];
     windDirection = doc["current_weather"]["winddirection"];
+    
+    currentTemperature = temp;
+    currentWindSpeed = windSpeed;
+    currentWeatherDescription = getWeatherDescription(weatherCode);
+    
+    // Clear previous hourly data
+    hourlyTemperatures.clear();
+    hourlyWindSpeeds.clear();
+    hourlyTime.clear();
+    hourlyPrecipitation.clear();
+
+    // Parse hourly temperature data
+    JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
+    for (JsonVariant v : hourly_temp_array) {
+        hourlyTemperatures.push_back(v.as<float>());
+    }
+
+    // Parse hourly wind speed data
+    JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
+    for (JsonVariant v : hourly_wind_array) {
+        hourlyWindSpeeds.push_back(v.as<float>());
+    }
+
+    // Parse hourly time data
+    JsonArray hourly_time_array = doc["hourly"]["time"].as<JsonArray>();
+    for (JsonVariant v : hourly_time_array) {
+        String fullTimestamp = v.as<String>();
+        // Extract just HH:MM for display
+        hourlyTime.push_back(fullTimestamp.substring(11, 16)); 
+    }
+
+    // Parse hourly precipitation data
+    JsonArray hourly_precipitation_array = doc["hourly"]["precipitation"].as<JsonArray>();
+    for (JsonVariant v : hourly_precipitation_array) {
+        hourlyPrecipitation.push_back(v.as<float>());
+    }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
     windData = String(windSpeed, 1) + " " + windSpeedUnit;
@@ -93,4 +137,32 @@ bool Weather::isTimeToUpdate(unsigned long currentMillis) const {
 
 int Weather::getWindDirection() const {
     return windDirection;
+}
+
+std::vector<float> Weather::getHourlyTemperatures() const {
+    return hourlyTemperatures;
+}
+
+std::vector<float> Weather::getHourlyWindSpeeds() const {
+    return hourlyWindSpeeds;
+}
+
+std::vector<String> Weather::getHourlyTime() const {
+    return hourlyTime;
+}
+
+std::vector<float> Weather::getHourlyPrecipitation() const {
+    return hourlyPrecipitation;
+}
+
+float Weather::getCurrentTemperature() const {
+    return currentTemperature;
+}
+
+float Weather::getCurrentWindSpeed() const {
+    return currentWindSpeed;
+}
+
+String Weather::getWeatherDescription() const {
+    return currentWeatherDescription;
 } 
