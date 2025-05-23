@@ -23,33 +23,6 @@ int Rendering::parseHHMMtoMinutes(const String& hhmm) {
     return hours * 60 + minutes;
 }
 
-void Rendering::drawWindDirectionIndicator(int x, int y, int radius, int direction) {
-    display.drawCircle(x, y, radius, GxEPD_LIGHTGREY);
-    
-    // Calculate the end point of the direction line
-    // Meteorological wind direction: 0° = wind FROM North, 90° = wind FROM East
-    // We need to:
-    // 1. Convert from "wind from" to "wind to" by adding 180°
-    // 2. Adjust for screen coordinates where Y increases downward
-    
-    // Convert from "wind from" to "wind to"
-    int adjustedDir = (direction + 180) % 360;
-    
-    // In screen coordinates: 0° is right, clockwise rotation
-    // North is upward (270°), East is right (0°), South is down (90°), West is left (180°)
-    float angleRadians = adjustedDir * PI / 180.0;
-    
-    // Calculate end point (note: sin is negated because screen Y increases downward)
-    int endX = x + round(radius * sin(angleRadians));
-    int endY = y - round(radius * cos(angleRadians));
-    
-    // Draw the direction line
-    display.drawLine(x, y, endX, endY, GxEPD_DARKGREY);
-    
-    // Draw a small circle at the center for better visibility
-    display.fillCircle(x, y, 2, GxEPD_BLACK);
-}
-
 void Rendering::displayWeather(Weather& weather) {
     Serial.println("Updating display...");
     
@@ -93,12 +66,10 @@ void Rendering::displayWeather(Weather& weather) {
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " km/h";
     display.println(windDisplay);
     
-    // Draw wind direction indicator, aligned with wind text
-    int radius = 12; 
-    int windDirX = display.width() - radius - 6;
-    int windDirY = y1_batt + h_batt + 24;
-    drawWindDirectionIndicator(windDirX, windDirY, radius, weather.getWindDirection());
-
+    int16_t wind_x1, wind_y1;
+    uint16_t wind_w, wind_h;
+    display.getTextBounds(windDisplay, 6, wind_text_y, &wind_x1, &wind_y1, &wind_w, &wind_h);
+    
     // Define Meteogram Area (below current weather, using more height)
     int meteogramX = 0;
     int meteogramY = wind_text_y + 10;

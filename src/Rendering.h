@@ -10,7 +10,6 @@ private:
     GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
     
     int parseHHMMtoMinutes(const String& hhmm);
-    void drawWindDirectionIndicator(int x, int y, int radius, int direction);
     void drawMeteogram(Weather& weather, int x, int y, int w, int h);
 
 public:
