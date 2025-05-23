@@ -22,6 +22,10 @@ public:
     std::vector<float> getHourlyTemperatures() const;
     std::vector<float> getHourlyWindSpeeds() const;
     std::vector<String> getHourlyTime() const;
+    
+    float getCurrentTemperature() const;
+    float getCurrentWindSpeed() const;
+    String getWeatherDescription() const;
 
 private:
     // API settings
@@ -36,6 +40,10 @@ private:
     unsigned long lastWeatherUpdate = 0;
     const unsigned long updateInterval = 300000; // Update weather every 5 minutes
     int windDirection = 0;
+    
+    float currentTemperature = 0.0;
+    float currentWindSpeed = 0.0;
+    String currentWeatherDescription = "Loading...";
     
     std::vector<float> hourlyTemperatures;
     std::vector<float> hourlyWindSpeeds;

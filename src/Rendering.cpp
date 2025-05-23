@@ -73,11 +73,15 @@ void Rendering::displayWeather(Weather& weather) {
     // Position current weather and wind text higher and more compactly
     int current_weather_y = 24; 
     display.setCursor(6, current_weather_y);
-    display.println(weather.getWeatherText());
+    
+    String weatherDisplay = String(weather.getCurrentTemperature(), 1) + " C " + weather.getWeatherDescription();
+    display.println(weatherDisplay);
     
     int wind_text_y = current_weather_y + 24;
     display.setCursor(6, wind_text_y);
-    display.println(weather.getWindText());
+    
+    String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " km/h";
+    display.println(windDisplay);
     
     // Draw wind direction indicator, aligned with wind text
     int radius = 12; 

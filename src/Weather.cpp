@@ -50,6 +50,10 @@ void Weather::update() {
     String windSpeedUnit = doc["current_weather_units"]["windspeed"];
     windDirection = doc["current_weather"]["winddirection"];
     
+    currentTemperature = temp;
+    currentWindSpeed = windSpeed;
+    currentWeatherDescription = getWeatherDescription(weatherCode);
+    
     // Clear previous hourly data
     hourlyTemperatures.clear();
     hourlyWindSpeeds.clear();
@@ -136,4 +140,16 @@ std::vector<float> Weather::getHourlyWindSpeeds() const {
 
 std::vector<String> Weather::getHourlyTime() const {
     return hourlyTime;
+}
+
+float Weather::getCurrentTemperature() const {
+    return currentTemperature;
+}
+
+float Weather::getCurrentWindSpeed() const {
+    return currentWindSpeed;
+}
+
+String Weather::getWeatherDescription() const {
+    return currentWeatherDescription;
 } 
