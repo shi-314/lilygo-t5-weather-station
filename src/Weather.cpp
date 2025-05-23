@@ -10,8 +10,7 @@ void Weather::update() {
     String url = String(openMeteoEndpoint) + 
                 "?latitude=" + String(latitude, 6) + 
                 "&longitude=" + String(longitude, 6) + 
-                "&current_weather=true" +
-                "&current=wind_speed_10m" +
+                "&current=temperature_2m,wind_speed_10m,wind_gusts_10m,weather_code,wind_direction" +
                 "&hourly=temperature_2m,wind_speed_10m,precipitation" +
                 "&timezone=auto";
     
@@ -45,15 +44,18 @@ void Weather::update() {
         return;
     }
 
-    float temp = doc["current_weather"]["temperature"];
-    int weatherCode = doc["current_weather"]["weathercode"];
-    String timeStr = doc["current_weather"]["time"].as<String>();
-    float windSpeed = doc["current_weather"]["windspeed"];
-    String windSpeedUnit = doc["current_weather_units"]["windspeed"];
-    windDirection = doc["current_weather"]["winddirection"];
+    float temp = doc["current"]["temperature_2m"];
+    int weatherCode = doc["current"]["weather_code"];
+    String timeStr = doc["current"]["time"].as<String>();
+    float windSpeed = doc["current"]["wind_speed_10m"];
+    String windSpeedUnit = doc["current_units"]["wind_speed_10m"];
+    windDirection = doc["current"]["wind_direction"];
+    float windGusts = doc["current"]["wind_gusts_10m"];
+    Serial.println(payload);
     
     currentTemperature = temp;
     currentWindSpeed = windSpeed;
+    currentWindGusts = windGusts;
     currentWeatherDescription = getWeatherDescription(weatherCode);
     
     // Clear previous hourly data
@@ -161,6 +163,10 @@ float Weather::getCurrentTemperature() const {
 
 float Weather::getCurrentWindSpeed() const {
     return currentWindSpeed;
+}
+
+float Weather::getCurrentWindGusts() const {
+    return currentWindGusts;
 }
 
 String Weather::getWeatherDescription() const {

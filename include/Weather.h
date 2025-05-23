@@ -26,6 +26,7 @@ public:
     
     float getCurrentTemperature() const;
     float getCurrentWindSpeed() const;
+    float getCurrentWindGusts() const;
     String getWeatherDescription() const;
 
 private:
@@ -44,6 +45,7 @@ private:
     
     float currentTemperature = 0.0;
     float currentWindSpeed = 0.0;
+    float currentWindGusts = 0.0;
     String currentWeatherDescription = "Loading...";
     
     std::vector<float> hourlyTemperatures;
