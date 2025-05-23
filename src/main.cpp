@@ -18,7 +18,7 @@ const float longitude = 13.404954; // Berlin longitude
 
 GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
-const unsigned long sleepTime = 300000000; // Deep sleep time in microseconds (5 minutes)
+const unsigned long sleepTime = 900000000; // Deep sleep time in microseconds (15 minutes)
 
 WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
