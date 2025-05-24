@@ -10,8 +10,9 @@ void Weather::update() {
     String url = String(openMeteoEndpoint) + 
                 "?latitude=" + String(latitude, 6) + 
                 "&longitude=" + String(longitude, 6) + 
-                "&current=temperature_2m,wind_speed_10m,wind_gusts_10m,weather_code,wind_direction" +
-                "&hourly=temperature_2m,wind_speed_10m,precipitation" +
+                "&hourly=temperature_2m,precipitation,wind_speed_10m" +
+                "&current=wind_speed_10m,wind_gusts_10m,temperature_2m,weather_code,wind_direction_10m" +
+                "&forecast_days=1" +
                 "&timezone=auto";
     
     http.begin(url);
@@ -49,7 +50,7 @@ void Weather::update() {
     String timeStr = doc["current"]["time"].as<String>();
     float windSpeed = doc["current"]["wind_speed_10m"];
     String windSpeedUnit = doc["current_units"]["wind_speed_10m"];
-    windDirection = doc["current"]["wind_direction"];
+    windDirection = doc["current"]["wind_direction_10m"];
     float windGusts = doc["current"]["wind_gusts_10m"];
     Serial.println(payload);
     
