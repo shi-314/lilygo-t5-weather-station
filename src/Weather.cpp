@@ -10,7 +10,7 @@ void Weather::update() {
     String url = String(openMeteoEndpoint) + 
                 "?latitude=" + String(latitude, 6) + 
                 "&longitude=" + String(longitude, 6) + 
-                "&hourly=temperature_2m,precipitation,wind_speed_10m,cloud_cover_low" +
+                "&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m,cloud_cover_low" +
                 "&current=wind_speed_10m,wind_gusts_10m,temperature_2m,weather_code,wind_direction_10m" +
                 "&forecast_days=1" +
                 "&timezone=auto";
@@ -23,6 +23,7 @@ void Weather::update() {
         weatherData = "Weather error";
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
+        hourlyWindGusts.clear();
         hourlyTime.clear();
         hourlyPrecipitation.clear();
         hourlyCloudCoverage.clear();
@@ -40,6 +41,7 @@ void Weather::update() {
         weatherData = "JSON error";
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
+        hourlyWindGusts.clear();
         hourlyTime.clear();
         hourlyPrecipitation.clear();
         hourlyCloudCoverage.clear();
@@ -66,6 +68,7 @@ void Weather::update() {
     // Clear previous hourly data
     hourlyTemperatures.clear();
     hourlyWindSpeeds.clear();
+    hourlyWindGusts.clear();
     hourlyTime.clear();
     hourlyPrecipitation.clear();
     hourlyCloudCoverage.clear();
@@ -80,6 +83,12 @@ void Weather::update() {
     JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
     for (JsonVariant v : hourly_wind_array) {
         hourlyWindSpeeds.push_back(v.as<float>() / 3.6);
+    }
+
+    // Parse hourly wind gusts data
+    JsonArray hourly_wind_gusts_array = doc["hourly"]["wind_gusts_10m"].as<JsonArray>();
+    for (JsonVariant v : hourly_wind_gusts_array) {
+        hourlyWindGusts.push_back(v.as<float>() / 3.6);
     }
 
     // Parse hourly time data
@@ -154,6 +163,10 @@ std::vector<float> Weather::getHourlyTemperatures() const {
 
 std::vector<float> Weather::getHourlyWindSpeeds() const {
     return hourlyWindSpeeds;
+}
+
+std::vector<float> Weather::getHourlyWindGusts() const {
+    return hourlyWindGusts;
 }
 
 std::vector<String> Weather::getHourlyTime() const {

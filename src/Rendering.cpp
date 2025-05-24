@@ -23,6 +23,43 @@ int Rendering::parseHHMMtoMinutes(const String& hhmm) {
     return hours * 60 + minutes;
 }
 
+void Rendering::drawDottedLine(int x0, int y0, int x1, int y1, uint16_t color) {
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    int sx = x0 < x1 ? 1 : -1;
+    int sy = y0 < y1 ? 1 : -1;
+    int err = dx - dy;
+    
+    int x = x0;
+    int y = y0;
+    int dotCount = 0;
+    const int dotLength = 2;
+    const int gapLength = 2;
+    
+    while (true) {
+        if (dotCount < dotLength) {
+            display.drawPixel(x, y, color);
+        }
+        
+        dotCount++;
+        if (dotCount >= dotLength + gapLength) {
+            dotCount = 0;
+        }
+        
+        if (x == x1 && y == y1) break;
+        
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y += sy;
+        }
+    }
+}
+
 void Rendering::displayWeather(Weather& weather) {
     Serial.println("Updating display...");
     
@@ -83,17 +120,18 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     display.setFont(nullptr);
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
+    std::vector<float> windGusts = weather.getHourlyWindGusts();
     std::vector<String> times = weather.getHourlyTime();
     std::vector<float> precipitation = weather.getHourlyPrecipitation();
     std::vector<float> cloudCoverage = weather.getHourlyCloudCoverage();
 
-    if (temps.empty() || winds.empty() || times.empty() || precipitation.empty() || cloudCoverage.empty()) {
+    if (temps.empty() || winds.empty() || windGusts.empty() || times.empty() || precipitation.empty() || cloudCoverage.empty()) {
         display.setCursor(x_base, y_base + h / 2);
         display.print("No meteogram data.");
         return;
     }
 
-    int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)times.size(), (int)precipitation.size(), (int)cloudCoverage.size(), 24});
+    int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)windGusts.size(), (int)times.size(), (int)precipitation.size(), (int)cloudCoverage.size(), 24});
     if (num_points <= 1) { 
         display.setCursor(x_base, y_base + h / 2);
         display.print("Not enough data.");
@@ -102,8 +140,13 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
 
     float min_temp = *std::min_element(temps.begin(), temps.begin() + num_points);
     float max_temp = *std::max_element(temps.begin(), temps.begin() + num_points);
-    float min_wind = *std::min_element(winds.begin(), winds.begin() + num_points);
-    float max_wind = *std::max_element(winds.begin(), winds.begin() + num_points);
+    
+    std::vector<float> allWindData;
+    allWindData.insert(allWindData.end(), winds.begin(), winds.begin() + num_points);
+    allWindData.insert(allWindData.end(), windGusts.begin(), windGusts.begin() + num_points);
+    float min_wind = *std::min_element(allWindData.begin(), allWindData.end());
+    float max_wind = *std::max_element(allWindData.begin(), allWindData.end());
+    
     float max_precipitation = *std::max_element(precipitation.begin(), precipitation.begin() + num_points);
     
     if (max_temp == min_temp) max_temp += 1.0f;
@@ -202,10 +245,15 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
         int y1_wind = plot_y + plot_h - round(((winds[i] - min_wind) / (max_wind - min_wind)) * plot_h);
         int y2_wind = plot_y + plot_h - round(((winds[i+1] - min_wind) / (max_wind - min_wind)) * plot_h);
         
+        int y1_gust = plot_y + plot_h - round(((windGusts[i] - min_wind) / (max_wind - min_wind)) * plot_h);
+        int y2_gust = plot_y + plot_h - round(((windGusts[i+1] - min_wind) / (max_wind - min_wind)) * plot_h);
+        
         display.drawLine(x1, constrain(y1_temp, plot_y, plot_y + plot_h), 
                         x2, constrain(y2_temp, plot_y, plot_y + plot_h), GxEPD_BLACK);
-        display.drawLine(x1, constrain(y1_wind, plot_y, plot_y + plot_h), 
-                        x2, constrain(y2_wind, plot_y, plot_y + plot_h), GxEPD_DARKGREY);
+        drawDottedLine(x1, constrain(y1_wind, plot_y, plot_y + plot_h), 
+                      x2, constrain(y2_wind, plot_y, plot_y + plot_h), GxEPD_LIGHTGREY);
+        drawDottedLine(x1, constrain(y1_gust, plot_y, plot_y + plot_h), 
+                      x2, constrain(y2_gust, plot_y, plot_y + plot_h), GxEPD_DARKGREY);
     }
 
     String lastUpdateStr = weather.getLastUpdateTime();

@@ -20,6 +20,7 @@ public:
     int getWindDirection() const;
     std::vector<float> getHourlyTemperatures() const;
     std::vector<float> getHourlyWindSpeeds() const;
+    std::vector<float> getHourlyWindGusts() const;
     std::vector<String> getHourlyTime() const;
     std::vector<float> getHourlyPrecipitation() const;
     std::vector<float> getHourlyCloudCoverage() const;
@@ -49,6 +50,7 @@ private:
     
     std::vector<float> hourlyTemperatures;
     std::vector<float> hourlyWindSpeeds;
+    std::vector<float> hourlyWindGusts;
     std::vector<String> hourlyTime;
     std::vector<float> hourlyPrecipitation;
     std::vector<float> hourlyCloudCoverage;
