@@ -251,7 +251,7 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
         display.drawLine(x1, constrain(y1_temp, plot_y, plot_y + plot_h), 
                         x2, constrain(y2_temp, plot_y, plot_y + plot_h), GxEPD_BLACK);
         drawDottedLine(x1, constrain(y1_wind, plot_y, plot_y + plot_h), 
-                      x2, constrain(y2_wind, plot_y, plot_y + plot_h), GxEPD_LIGHTGREY);
+                      x2, constrain(y2_wind, plot_y, plot_y + plot_h), GxEPD_DARKGREY);
         drawDottedLine(x1, constrain(y1_gust, plot_y, plot_y + plot_h), 
                       x2, constrain(y2_gust, plot_y, plot_y + plot_h), GxEPD_DARKGREY);
     }
