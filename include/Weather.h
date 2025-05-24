@@ -22,6 +22,7 @@ public:
     std::vector<float> getHourlyWindSpeeds() const;
     std::vector<String> getHourlyTime() const;
     std::vector<float> getHourlyPrecipitation() const;
+    std::vector<float> getHourlyCloudCoverage() const;
     
     float getCurrentTemperature() const;
     float getCurrentWindSpeed() const;
@@ -50,6 +51,7 @@ private:
     std::vector<float> hourlyWindSpeeds;
     std::vector<String> hourlyTime;
     std::vector<float> hourlyPrecipitation;
+    std::vector<float> hourlyCloudCoverage;
     
     String getWeatherDescription(int weatherCode) const;
 }; 

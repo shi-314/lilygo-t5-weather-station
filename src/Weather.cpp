@@ -10,7 +10,7 @@ void Weather::update() {
     String url = String(openMeteoEndpoint) + 
                 "?latitude=" + String(latitude, 6) + 
                 "&longitude=" + String(longitude, 6) + 
-                "&hourly=temperature_2m,precipitation,wind_speed_10m" +
+                "&hourly=temperature_2m,precipitation,wind_speed_10m,cloud_cover_low" +
                 "&current=wind_speed_10m,wind_gusts_10m,temperature_2m,weather_code,wind_direction_10m" +
                 "&forecast_days=1" +
                 "&timezone=auto";
@@ -25,6 +25,7 @@ void Weather::update() {
         hourlyWindSpeeds.clear();
         hourlyTime.clear();
         hourlyPrecipitation.clear();
+        hourlyCloudCoverage.clear();
         http.end();
         return;
     }
@@ -41,6 +42,7 @@ void Weather::update() {
         hourlyWindSpeeds.clear();
         hourlyTime.clear();
         hourlyPrecipitation.clear();
+        hourlyCloudCoverage.clear();
         http.end();
         return;
     }
@@ -54,7 +56,7 @@ void Weather::update() {
     windDirection = doc["current"]["wind_direction_10m"];
     float windGustsKmh = doc["current"]["wind_gusts_10m"].as<float>();
     float windGusts = windGustsKmh / 3.6; // Convert km/h to m/s
-    Serial.println(payload);
+    // Serial.println(payload);
     
     currentTemperature = temp;
     currentWindSpeed = windSpeed;
@@ -66,6 +68,7 @@ void Weather::update() {
     hourlyWindSpeeds.clear();
     hourlyTime.clear();
     hourlyPrecipitation.clear();
+    hourlyCloudCoverage.clear();
 
     // Parse hourly temperature data
     JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
@@ -91,6 +94,12 @@ void Weather::update() {
     JsonArray hourly_precipitation_array = doc["hourly"]["precipitation"].as<JsonArray>();
     for (JsonVariant v : hourly_precipitation_array) {
         hourlyPrecipitation.push_back(v.as<float>());
+    }
+
+    // Parse hourly cloud coverage data
+    JsonArray hourly_cloud_array = doc["hourly"]["cloud_cover_low"].as<JsonArray>();
+    for (JsonVariant v : hourly_cloud_array) {
+        hourlyCloudCoverage.push_back(v.as<float>());
     }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
@@ -153,6 +162,10 @@ std::vector<String> Weather::getHourlyTime() const {
 
 std::vector<float> Weather::getHourlyPrecipitation() const {
     return hourlyPrecipitation;
+}
+
+std::vector<float> Weather::getHourlyCloudCoverage() const {
+    return hourlyCloudCoverage;
 }
 
 float Weather::getCurrentTemperature() const {
