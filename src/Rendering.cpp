@@ -85,14 +85,15 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     std::vector<float> winds = weather.getHourlyWindSpeeds();
     std::vector<String> times = weather.getHourlyTime();
     std::vector<float> precipitation = weather.getHourlyPrecipitation();
+    std::vector<float> cloudCoverage = weather.getHourlyCloudCoverage();
 
-    if (temps.empty() || winds.empty() || times.empty() || precipitation.empty()) {
+    if (temps.empty() || winds.empty() || times.empty() || precipitation.empty() || cloudCoverage.empty()) {
         display.setCursor(x_base, y_base + h / 2);
         display.print("No meteogram data.");
         return;
     }
 
-    int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)times.size(), (int)precipitation.size(), 24});
+    int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)times.size(), (int)precipitation.size(), (int)cloudCoverage.size(), 24});
     if (num_points <= 1) { 
         display.setCursor(x_base, y_base + h / 2);
         display.print("Not enough data.");
@@ -116,11 +117,14 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
     int left_padding = label_w + 6;
     int right_padding = label_w + 6;
     int bottom_padding = label_h + 6;
-
+    
+    const int cloud_bar_height = 6;
+    const int cloud_bar_spacing = 2;
+    
     int plot_x = x_base + left_padding;
-    int plot_y = y_base;
+    int plot_y = y_base + cloud_bar_height + cloud_bar_spacing;
     int plot_w = w - left_padding - right_padding;
-    int plot_h = h - bottom_padding;
+    int plot_h = h - bottom_padding - cloud_bar_height - cloud_bar_spacing;
 
     if (plot_w <= 20 || plot_h <= 10) {
         display.setCursor(x_base, y_base + h / 2);
@@ -128,9 +132,33 @@ void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, i
         return; 
     }
 
-    display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
-    
+    // Draw cloud coverage bar on top
     float x_step = (float)plot_w / (num_points - 1);
+    for (int i = 0; i < num_points - 1; ++i) {
+        int x1_pos = plot_x + round(i * x_step);
+        int x2_pos = plot_x + round((i + 1) * x_step);
+        int segment_width = x2_pos - x1_pos;
+        
+        // Get cloud coverage color based on percentage
+        uint16_t cloudColor;
+        float coverage = cloudCoverage[i];
+        if (coverage < 25.0f) {
+            cloudColor = GxEPD_WHITE;
+        } else if (coverage < 50.0f) {
+            cloudColor = GxEPD_LIGHTGREY;
+        } else if (coverage < 75.0f) {
+            cloudColor = GxEPD_DARKGREY;
+        } else {
+            cloudColor = GxEPD_BLACK;
+        }
+        
+        display.fillRect(x1_pos, y_base, segment_width, cloud_bar_height, cloudColor);
+    }
+    
+    // Draw border around cloud coverage bar
+    display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_BLACK);
+
+    display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
     
     for (int i = 0; i < num_points; ++i) {
         if (precipitation[i] > 0.0f) {
