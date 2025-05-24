@@ -15,17 +15,19 @@ public:
     // Uses the global wifi object to check connectivity before updating
     void update();
     String getWeatherText() const;
-    String getWindText() const;
     String getLastUpdateTime() const;
     bool isTimeToUpdate(unsigned long currentMillis) const;
     int getWindDirection() const;
     std::vector<float> getHourlyTemperatures() const;
     std::vector<float> getHourlyWindSpeeds() const;
+    std::vector<float> getHourlyWindGusts() const;
     std::vector<String> getHourlyTime() const;
     std::vector<float> getHourlyPrecipitation() const;
+    std::vector<float> getHourlyCloudCoverage() const;
     
     float getCurrentTemperature() const;
     float getCurrentWindSpeed() const;
+    float getCurrentWindGusts() const;
     String getWeatherDescription() const;
 
 private:
@@ -36,7 +38,6 @@ private:
     
     // Weather data
     String weatherData = "Loading...";
-    String windData = "Loading...";
     String lastUpdateTime = "";
     unsigned long lastWeatherUpdate = 0;
     const unsigned long updateInterval = 300000; // Update weather every 5 minutes
@@ -44,12 +45,15 @@ private:
     
     float currentTemperature = 0.0;
     float currentWindSpeed = 0.0;
+    float currentWindGusts = 0.0;
     String currentWeatherDescription = "Loading...";
     
     std::vector<float> hourlyTemperatures;
     std::vector<float> hourlyWindSpeeds;
+    std::vector<float> hourlyWindGusts;
     std::vector<String> hourlyTime;
     std::vector<float> hourlyPrecipitation;
+    std::vector<float> hourlyCloudCoverage;
     
     String getWeatherDescription(int weatherCode) const;
 }; 

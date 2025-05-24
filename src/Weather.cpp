@@ -10,9 +10,9 @@ void Weather::update() {
     String url = String(openMeteoEndpoint) + 
                 "?latitude=" + String(latitude, 6) + 
                 "&longitude=" + String(longitude, 6) + 
-                "&current_weather=true" +
-                "&current=wind_speed_10m" +
-                "&hourly=temperature_2m,wind_speed_10m,precipitation" +
+                "&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m,cloud_cover_low" +
+                "&current=wind_speed_10m,wind_gusts_10m,temperature_2m,weather_code,wind_direction_10m" +
+                "&forecast_days=1" +
                 "&timezone=auto";
     
     http.begin(url);
@@ -23,8 +23,10 @@ void Weather::update() {
         weatherData = "Weather error";
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
+        hourlyWindGusts.clear();
         hourlyTime.clear();
         hourlyPrecipitation.clear();
+        hourlyCloudCoverage.clear();
         http.end();
         return;
     }
@@ -39,28 +41,37 @@ void Weather::update() {
         weatherData = "JSON error";
         hourlyTemperatures.clear();
         hourlyWindSpeeds.clear();
+        hourlyWindGusts.clear();
         hourlyTime.clear();
         hourlyPrecipitation.clear();
+        hourlyCloudCoverage.clear();
         http.end();
         return;
     }
 
-    float temp = doc["current_weather"]["temperature"];
-    int weatherCode = doc["current_weather"]["weathercode"];
-    String timeStr = doc["current_weather"]["time"].as<String>();
-    float windSpeed = doc["current_weather"]["windspeed"];
-    String windSpeedUnit = doc["current_weather_units"]["windspeed"];
-    windDirection = doc["current_weather"]["winddirection"];
+    float temp = doc["current"]["temperature_2m"];
+    int weatherCode = doc["current"]["weather_code"];
+    String timeStr = doc["current"]["time"].as<String>();
+    float windSpeedKmh = doc["current"]["wind_speed_10m"].as<float>();
+    float windSpeed = windSpeedKmh / 3.6; // Convert km/h to m/s
+    String windSpeedUnit = doc["current_units"]["wind_speed_10m"];
+    windDirection = doc["current"]["wind_direction_10m"];
+    float windGustsKmh = doc["current"]["wind_gusts_10m"].as<float>();
+    float windGusts = windGustsKmh / 3.6; // Convert km/h to m/s
+    // Serial.println(payload);
     
     currentTemperature = temp;
     currentWindSpeed = windSpeed;
+    currentWindGusts = windGusts;
     currentWeatherDescription = getWeatherDescription(weatherCode);
     
     // Clear previous hourly data
     hourlyTemperatures.clear();
     hourlyWindSpeeds.clear();
+    hourlyWindGusts.clear();
     hourlyTime.clear();
     hourlyPrecipitation.clear();
+    hourlyCloudCoverage.clear();
 
     // Parse hourly temperature data
     JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
@@ -71,7 +82,13 @@ void Weather::update() {
     // Parse hourly wind speed data
     JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
     for (JsonVariant v : hourly_wind_array) {
-        hourlyWindSpeeds.push_back(v.as<float>());
+        hourlyWindSpeeds.push_back(v.as<float>() / 3.6);
+    }
+
+    // Parse hourly wind gusts data
+    JsonArray hourly_wind_gusts_array = doc["hourly"]["wind_gusts_10m"].as<JsonArray>();
+    for (JsonVariant v : hourly_wind_gusts_array) {
+        hourlyWindGusts.push_back(v.as<float>() / 3.6);
     }
 
     // Parse hourly time data
@@ -87,9 +104,14 @@ void Weather::update() {
     for (JsonVariant v : hourly_precipitation_array) {
         hourlyPrecipitation.push_back(v.as<float>());
     }
+
+    // Parse hourly cloud coverage data
+    JsonArray hourly_cloud_array = doc["hourly"]["cloud_cover_low"].as<JsonArray>();
+    for (JsonVariant v : hourly_cloud_array) {
+        hourlyCloudCoverage.push_back(v.as<float>());
+    }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
-    windData = String(windSpeed, 1) + " " + windSpeedUnit;
     
     struct tm timeinfo;
     strptime(timeStr.c_str(), "%Y-%m-%dT%H:%M", &timeinfo);
@@ -123,10 +145,6 @@ String Weather::getWeatherText() const {
     return weatherData;
 }
 
-String Weather::getWindText() const {
-    return windData;
-}
-
 String Weather::getLastUpdateTime() const {
     return lastUpdateTime;
 }
@@ -147,6 +165,10 @@ std::vector<float> Weather::getHourlyWindSpeeds() const {
     return hourlyWindSpeeds;
 }
 
+std::vector<float> Weather::getHourlyWindGusts() const {
+    return hourlyWindGusts;
+}
+
 std::vector<String> Weather::getHourlyTime() const {
     return hourlyTime;
 }
@@ -155,12 +177,20 @@ std::vector<float> Weather::getHourlyPrecipitation() const {
     return hourlyPrecipitation;
 }
 
+std::vector<float> Weather::getHourlyCloudCoverage() const {
+    return hourlyCloudCoverage;
+}
+
 float Weather::getCurrentTemperature() const {
     return currentTemperature;
 }
 
 float Weather::getCurrentWindSpeed() const {
     return currentWindSpeed;
+}
+
+float Weather::getCurrentWindGusts() const {
+    return currentWindGusts;
 }
 
 String Weather::getWeatherDescription() const {
