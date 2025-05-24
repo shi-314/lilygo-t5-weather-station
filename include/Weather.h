@@ -15,7 +15,6 @@ public:
     // Uses the global wifi object to check connectivity before updating
     void update();
     String getWeatherText() const;
-    String getWindText() const;
     String getLastUpdateTime() const;
     bool isTimeToUpdate(unsigned long currentMillis) const;
     int getWindDirection() const;
@@ -37,7 +36,6 @@ private:
     
     // Weather data
     String weatherData = "Loading...";
-    String windData = "Loading...";
     String lastUpdateTime = "";
     unsigned long lastWeatherUpdate = 0;
     const unsigned long updateInterval = 300000; // Update weather every 5 minutes

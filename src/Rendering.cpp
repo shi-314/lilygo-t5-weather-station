@@ -64,7 +64,7 @@ void Rendering::displayWeather(Weather& weather) {
     display.setCursor(6, wind_text_y);
     
     display.setFont(&FreeSans9pt7b);
-    String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " km/h";
+    String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
     display.println(windDisplay);
     
     int16_t wind_x1, wind_y1;

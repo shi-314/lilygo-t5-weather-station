@@ -48,10 +48,12 @@ void Weather::update() {
     float temp = doc["current"]["temperature_2m"];
     int weatherCode = doc["current"]["weather_code"];
     String timeStr = doc["current"]["time"].as<String>();
-    float windSpeed = doc["current"]["wind_speed_10m"];
+    float windSpeedKmh = doc["current"]["wind_speed_10m"].as<float>();
+    float windSpeed = windSpeedKmh / 3.6; // Convert km/h to m/s
     String windSpeedUnit = doc["current_units"]["wind_speed_10m"];
     windDirection = doc["current"]["wind_direction_10m"];
-    float windGusts = doc["current"]["wind_gusts_10m"];
+    float windGustsKmh = doc["current"]["wind_gusts_10m"].as<float>();
+    float windGusts = windGustsKmh / 3.6; // Convert km/h to m/s
     Serial.println(payload);
     
     currentTemperature = temp;
@@ -74,7 +76,7 @@ void Weather::update() {
     // Parse hourly wind speed data
     JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
     for (JsonVariant v : hourly_wind_array) {
-        hourlyWindSpeeds.push_back(v.as<float>());
+        hourlyWindSpeeds.push_back(v.as<float>() / 3.6);
     }
 
     // Parse hourly time data
@@ -92,7 +94,6 @@ void Weather::update() {
     }
     
     weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
-    windData = String(windSpeed, 1) + " " + windSpeedUnit;
     
     struct tm timeinfo;
     strptime(timeStr.c_str(), "%Y-%m-%dT%H:%M", &timeinfo);
@@ -124,10 +125,6 @@ String Weather::getWeatherDescription(int weatherCode) const {
 
 String Weather::getWeatherText() const {
     return weatherData;
-}
-
-String Weather::getWindText() const {
-    return windData;
 }
 
 String Weather::getLastUpdateTime() const {
