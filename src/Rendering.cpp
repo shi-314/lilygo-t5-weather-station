@@ -1,18 +1,16 @@
 #include "Rendering.h"
 #include "battery.h"
-#include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/FreeSans12pt7b.h>
-#include "Fonts/Picopixel.h"
 #include "assets/WifiErrorIcon.h"
 #include <vector>
 #include <algorithm>
 
 Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display)
     : display(display),
-      primaryFont(&FreeSans12pt7b),
-      secondaryFont(&FreeSans9pt7b),
-      smallFont(nullptr)
+      primaryFont(u8g2_font_helvR18_tf),
+      secondaryFont(u8g2_font_helvR12_tf),
+      smallFont(u8g2_font_helvR08_tr)
 {
+    gfx.begin(display);
 }
 
 int Rendering::parseHHMMtoMinutes(const String &hhmm)
@@ -85,11 +83,13 @@ void Rendering::displayWeather(Weather &weather)
     String batteryStatus = getBatteryStatus();
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
 
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.setFont(secondaryFont);
-    display.getTextBounds("Temp", 0, 0, &x1, &y1, &w, &h);
-    int text_height = h;
+    gfx.setFontMode(1);
+    gfx.setFontDirection(0);
+    gfx.setForegroundColor(GxEPD_BLACK);
+    gfx.setBackgroundColor(GxEPD_WHITE);
+    gfx.setFont(secondaryFont);
+
+    int text_height = gfx.getFontAscent() - gfx.getFontDescent();
 
     int wind_y = display.height() - 3;
     int temp_y = wind_y - text_height - 8;
@@ -100,28 +100,27 @@ void Rendering::displayWeather(Weather &weather)
     int meteogramH = temp_y - meteogramY - 25;
     drawMeteogram(weather, meteogramX, meteogramY, meteogramW, meteogramH);
 
-    display.setFont(primaryFont);
-    display.setCursor(6, temp_y);
+    gfx.setFont(primaryFont);
+    gfx.setCursor(6, temp_y);
 
-    String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " C";
-    display.print(temperatureDisplay);
+    String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " °C";
+    gfx.print(temperatureDisplay);
 
-    display.getTextBounds(temperatureDisplay, 0, 0, &x1, &y1, &w, &h);
+    int temp_width = gfx.getUTF8Width(temperatureDisplay.c_str());
 
-    display.setFont(secondaryFont);
-    display.setCursor(6 + w + 8, temp_y);
-    display.print(" " + weather.getWeatherDescription());
+    gfx.setFont(secondaryFont);
+    gfx.setCursor(6 + temp_width + 8, temp_y);
+    gfx.print(" " + weather.getWeatherDescription());
 
-    display.setCursor(6, wind_y);
-    display.print(windDisplay);
+    gfx.setCursor(6, wind_y);
+    gfx.print(windDisplay);
 
-    display.setTextColor(GxEPD_DARKGREY);
-    display.setFont(smallFont);
-    int16_t x1_batt, y1_batt;
-    uint16_t w_batt, h_batt;
-    display.getTextBounds(batteryStatus, 0, 0, &x1_batt, &y1_batt, &w_batt, &h_batt);
-    display.setCursor(display.width() - w_batt - 2, display.height() - h_batt - 1);
-    display.print(batteryStatus);
+    gfx.setForegroundColor(GxEPD_DARKGREY);
+    gfx.setFont(smallFont);
+    int battery_width = gfx.getUTF8Width(batteryStatus.c_str());
+    int battery_height = gfx.getFontAscent() - gfx.getFontDescent();
+    gfx.setCursor(display.width() - battery_width - 2, display.height() - 1);
+    gfx.print(batteryStatus);
 
     display.displayWindow(0, 0, display.width(), display.height());
     display.hibernate();
@@ -130,7 +129,11 @@ void Rendering::displayWeather(Weather &weather)
 
 void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, int h)
 {
-    display.setFont(smallFont);
+    gfx.setFont(smallFont);
+    gfx.setFontMode(1);
+    gfx.setForegroundColor(GxEPD_BLACK);
+    gfx.setBackgroundColor(GxEPD_WHITE);
+
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
     std::vector<float> windGusts = weather.getHourlyWindGusts();
@@ -140,8 +143,8 @@ void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, i
 
     if (temps.empty() || winds.empty() || windGusts.empty() || times.empty() || precipitation.empty() || cloudCoverage.empty())
     {
-        display.setCursor(x_base, y_base + h / 2);
-        display.print("No meteogram data.");
+        gfx.setCursor(x_base, y_base + h / 2);
+        gfx.print("No meteogram data.");
         return;
     }
 
