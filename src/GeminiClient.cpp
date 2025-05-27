@@ -14,7 +14,7 @@ GeminiClient::~GeminiClient() {
 }
 
 bool GeminiClient::initialize() {
-    client.setInsecure(); // For simplicity, skip certificate validation
+    client.setInsecure();
     return true;
 }
 
@@ -46,9 +46,15 @@ String GeminiClient::generateContent(const String& prompt) {
 String GeminiClient::generateContent(const String& model, const String& prompt) {
     String endpoint = "/v1beta/models/" + model + ":generateContent";
     
-    DynamicJsonDocument doc(2048);
+    if (prompt.length() == 0) {
+        Serial.println("Error: Empty prompt");
+        return "Error: Empty prompt";
+    }
+    
+    DynamicJsonDocument doc(8192);
     JsonArray contents = doc.createNestedArray("contents");
     JsonObject content = contents.createNestedObject();
+    content["role"] = "user";
     JsonArray parts = content.createNestedArray("parts");
     JsonObject part = parts.createNestedObject();
     part["text"] = prompt;
@@ -58,7 +64,6 @@ String GeminiClient::generateContent(const String& model, const String& prompt) 
     
     String response = makeRequest(endpoint, payload);
     
-    // Parse response to extract generated text
     DynamicJsonDocument responseDoc(4096);
     deserializeJson(responseDoc, response);
     
@@ -70,6 +75,9 @@ String GeminiClient::generateContent(const String& model, const String& prompt) 
         
         return responseDoc["candidates"][0]["content"]["parts"][0]["text"].as<String>();
     }
+
+    Serial.println("Error: Could not parse response");
+    Serial.println(response);
     
     return "Error: Could not parse response";
 }
