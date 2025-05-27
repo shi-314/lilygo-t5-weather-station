@@ -4,15 +4,16 @@
 #include <GxEPD2_4G_4G.h>
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include "Weather.h"
-#include <gfxfont.h>
+#include <U8g2_for_Adafruit_GFX.h>
 
 class Rendering {
 private:
     GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
+    U8G2_FOR_ADAFRUIT_GFX u8g2_for_adafruit_gfx;
     
-    const GFXfont* primaryFont;
-    const GFXfont* secondaryFont;
-    const GFXfont* smallFont;
+    const uint8_t* primaryFont;
+    const uint8_t* secondaryFont;
+    const uint8_t* smallFont;
     
     int parseHHMMtoMinutes(const String& hhmm);
     void drawMeteogram(Weather& weather, int x, int y, int w, int h);
