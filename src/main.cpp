@@ -6,15 +6,14 @@
 #include "wifi_connection.h"
 #include "Weather.h"
 #include "Rendering.h"
-#include "boards.h"  // Include for LED pin definition
+#include "boards.h"
 
-// WiFi credentials
 const char* ssid = ":(";
 const char* password = "20009742591595504581";
 
-// Location coordinates
-const float latitude = 52.520008;  // Berlin latitude
-const float longitude = 13.404954; // Berlin longitude
+// Berlin
+const float latitude = 52.520008;
+const float longitude = 13.404954;
 
 GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
@@ -24,12 +23,30 @@ WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
 Rendering renderer(display);
 
-// Forward declarations
 void goToSleep();
+void checkWakeupReason();
+
+void checkWakeupReason() {
+    esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
+    
+    switch(wakeupReason) {
+        case ESP_SLEEP_WAKEUP_EXT0:
+            Serial.println("Wakeup caused by external signal using RTC_IO");
+            break;
+        case ESP_SLEEP_WAKEUP_TIMER:
+            Serial.println("Wakeup caused by timer");
+            break;
+        default:
+            Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeupReason);
+            break;
+    }
+}
 
 void goToSleep() {
     Serial.println("Going to deep sleep for " + String(sleepTime / 1000000) + " seconds");
+    Serial.println("Press button to wake up early");
     
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_39, 0);
     esp_sleep_enable_timer_wakeup(sleepTime);
     esp_deep_sleep_start();
 }
@@ -37,7 +54,10 @@ void goToSleep() {
 void setup() {
     Serial.begin(115200);
     
+    checkWakeupReason();
+    
     pinMode(BATTERY_PIN, INPUT);
+    pinMode(BUTTON_1, INPUT_PULLUP);
     SPI.begin(18, 19, 23);
     
     wifi.connect();
@@ -55,6 +75,4 @@ void setup() {
 }
 
 void loop() {
-    // Most of the work is done in setup() followed by deep sleep
-    // The loop() function won't be executed unless something prevents deep sleep
 } 
