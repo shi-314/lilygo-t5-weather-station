@@ -1,4 +1,4 @@
-#include "wifi_connection.h"
+#include "WiFiConnection.h"
 #include <WiFi.h>
 
 WiFiConnection::WiFiConnection(const char* ssid, const char* password)

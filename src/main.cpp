@@ -3,7 +3,7 @@
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include <time.h>
 #include "battery.h"
-#include "wifi_connection.h"
+#include "WiFiConnection.h"
 #include "Weather.h"
 #include "Rendering.h"
 #include "WifiErrorScreen.h"
