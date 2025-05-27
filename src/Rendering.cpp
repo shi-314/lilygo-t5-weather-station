@@ -229,7 +229,7 @@ void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, i
     }
 
     // Draw border around cloud coverage bar
-    display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_BLACK);
+    display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_LIGHTGREY);
 
     display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
 
@@ -256,7 +256,7 @@ void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, i
 
     String temp_labels[] = {String(max_temp, 0), String(min_temp, 0)};
     String wind_labels[] = {String(max_wind, 0), String(min_wind, 0)};
-    int y_positions[] = {plot_y, plot_y + plot_h};
+    int y_positions[] = {plot_y, plot_y + plot_h - label_h};
 
     for (int i = 0; i < 2; i++)
     {
