@@ -10,7 +10,6 @@ class Rendering {
 private:
     GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
     
-    // Font member variables for easy customization
     const GFXfont* primaryFont;
     const GFXfont* secondaryFont;
     const GFXfont* smallFont;
