@@ -9,8 +9,8 @@
 
 Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display)
     : display(display),
-      primaryFont(u8g2_font_helvB14_tr),
-      secondaryFont(u8g2_font_helvR10_tr),
+      primaryFont(u8g2_font_helvR18_tf),
+      secondaryFont(u8g2_font_helvR12_tf),
       smallFont(u8g2_font_helvR08_tr)
 {
     u8g2_for_adafruit_gfx.begin(display);
@@ -104,7 +104,6 @@ void Rendering::displayWeather(Weather &weather)
     int meteogramH = temp_y - meteogramY - 25;
     drawMeteogram(weather, meteogramX, meteogramY, meteogramW, meteogramH);
 
-    // Display temperature with larger font
     u8g2_for_adafruit_gfx.setFont(primaryFont);
     u8g2_for_adafruit_gfx.setCursor(6, temp_y);
 
