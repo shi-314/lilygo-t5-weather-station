@@ -86,11 +86,14 @@ void Rendering::displayWeather(Weather &weather)
     String batteryStatus = getBatteryStatus();
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
 
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.setFont(secondaryFont);
-    display.getTextBounds("Temp", 0, 0, &x1, &y1, &w, &h);
-    int text_height = h;
+    // Set up U8g2 fonts and get text dimensions
+    u8g2_for_adafruit_gfx.setFontMode(1);                    // Transparent mode
+    u8g2_for_adafruit_gfx.setFontDirection(0);               // Left to right
+    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_BLACK);   // Text color
+    u8g2_for_adafruit_gfx.setBackgroundColor(GxEPD_WHITE);   // Background color
+    u8g2_for_adafruit_gfx.setFont(secondaryFont);
+    
+    int text_height = u8g2_for_adafruit_gfx.getFontAscent() - u8g2_for_adafruit_gfx.getFontDescent();
 
     int wind_y = display.height() - 3;
     int temp_y = wind_y - text_height - 8;
@@ -101,25 +104,31 @@ void Rendering::displayWeather(Weather &weather)
     int meteogramH = temp_y - meteogramY - 25;
     drawMeteogram(weather, meteogramX, meteogramY, meteogramW, meteogramH);
 
-    display.setFont(primaryFont);
-    display.setCursor(6, temp_y);
+    // Display temperature with larger font
+    u8g2_for_adafruit_gfx.setFont(primaryFont);
+    u8g2_for_adafruit_gfx.setCursor(6, temp_y);
 
-    display.printf("%f%c", weather.getCurrentTemperature(), 0xF8);
+    String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " C";
+    u8g2_for_adafruit_gfx.print(temperatureDisplay);
 
-    display.setFont(secondaryFont);
-    display.setCursor(6 + w + 8, temp_y);
-    display.print(" " + weather.getWeatherDescription());
+    int temp_width = u8g2_for_adafruit_gfx.getUTF8Width(temperatureDisplay.c_str());
 
-    display.setCursor(6, wind_y);
-    display.print(windDisplay);
+    // Display weather description with medium font
+    u8g2_for_adafruit_gfx.setFont(secondaryFont);
+    u8g2_for_adafruit_gfx.setCursor(6 + temp_width + 8, temp_y);
+    u8g2_for_adafruit_gfx.print(" " + weather.getWeatherDescription());
 
-    display.setTextColor(GxEPD_DARKGREY);
-    display.setFont(smallFont);
-    int16_t x1_batt, y1_batt;
-    uint16_t w_batt, h_batt;
-    display.getTextBounds(batteryStatus, 0, 0, &x1_batt, &y1_batt, &w_batt, &h_batt);
-    display.setCursor(display.width() - w_batt - 2, display.height() - h_batt - 1);
-    display.print(batteryStatus);
+    // Display wind information
+    u8g2_for_adafruit_gfx.setCursor(6, wind_y);
+    u8g2_for_adafruit_gfx.print(windDisplay);
+
+    // Display battery status with small font
+    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_DARKGREY);
+    u8g2_for_adafruit_gfx.setFont(smallFont);
+    int battery_width = u8g2_for_adafruit_gfx.getUTF8Width(batteryStatus.c_str());
+    int battery_height = u8g2_for_adafruit_gfx.getFontAscent() - u8g2_for_adafruit_gfx.getFontDescent();
+    u8g2_for_adafruit_gfx.setCursor(display.width() - battery_width - 2, display.height() - 1);
+    u8g2_for_adafruit_gfx.print(batteryStatus);
 
     display.displayWindow(0, 0, display.width(), display.height());
     display.hibernate();
@@ -128,7 +137,11 @@ void Rendering::displayWeather(Weather &weather)
 
 void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, int h)
 {
-    display.setFont(smallFont);
+    u8g2_for_adafruit_gfx.setFont(smallFont);
+    u8g2_for_adafruit_gfx.setFontMode(1);                    // Transparent mode
+    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_BLACK);   // Text color
+    u8g2_for_adafruit_gfx.setBackgroundColor(GxEPD_WHITE);   // Background color
+    
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
     std::vector<float> windGusts = weather.getHourlyWindGusts();
@@ -138,8 +151,8 @@ void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, i
 
     if (temps.empty() || winds.empty() || windGusts.empty() || times.empty() || precipitation.empty() || cloudCoverage.empty())
     {
-        display.setCursor(x_base, y_base + h / 2);
-        display.print("No meteogram data.");
+        u8g2_for_adafruit_gfx.setCursor(x_base, y_base + h / 2);
+        u8g2_for_adafruit_gfx.print("No meteogram data.");
         return;
     }
 
