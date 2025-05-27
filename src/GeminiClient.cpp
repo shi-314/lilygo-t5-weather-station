@@ -60,7 +60,7 @@ String GeminiClient::makeRequest(const String& endpoint, const String& payload) 
 }
 
 String GeminiClient::generateContent(const String& prompt) {
-    return generateContent("gemini-1.5-flash", prompt);
+    return generateContent("gemini-2.5-flash-preview-05-20", prompt);
 }
 
 String GeminiClient::generateContent(const String& model, const String& prompt) {
