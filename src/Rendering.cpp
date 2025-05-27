@@ -7,9 +7,9 @@
 
 Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display)
     : display(display),
-      primaryFont(u8g2_font_helvR14_tf),
-      secondaryFont(u8g2_font_helvR10_tf),
-      smallFont(u8g2_font_4x6_tf)
+      primaryFont(u8g2_font_ncenB14_tr),
+      secondaryFont(u8g2_font_ncenB10_tr),
+      smallFont(u8g2_font_6x10_tr)
 {
     u8g2_for_adafruit_gfx.begin(display);
 }
@@ -85,9 +85,10 @@ void Rendering::displayWeather(Weather &weather)
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
 
     // Set up U8g2 fonts and get text dimensions
-    u8g2_for_adafruit_gfx.setFontMode(1);
-    u8g2_for_adafruit_gfx.setFontDirection(0);
-    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_BLACK);
+    u8g2_for_adafruit_gfx.setFontMode(1);                    // Transparent mode
+    u8g2_for_adafruit_gfx.setFontDirection(0);               // Left to right
+    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_BLACK);   // Text color
+    u8g2_for_adafruit_gfx.setBackgroundColor(GxEPD_WHITE);   // Background color
     u8g2_for_adafruit_gfx.setFont(secondaryFont);
     
     int text_height = u8g2_for_adafruit_gfx.getFontAscent() - u8g2_for_adafruit_gfx.getFontDescent();
@@ -135,7 +136,9 @@ void Rendering::displayWeather(Weather &weather)
 void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, int h)
 {
     u8g2_for_adafruit_gfx.setFont(smallFont);
-    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_BLACK);
+    u8g2_for_adafruit_gfx.setFontMode(1);                    // Transparent mode
+    u8g2_for_adafruit_gfx.setForegroundColor(GxEPD_BLACK);   // Text color
+    u8g2_for_adafruit_gfx.setBackgroundColor(GxEPD_WHITE);   // Background color
     
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
