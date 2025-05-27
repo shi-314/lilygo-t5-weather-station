@@ -13,7 +13,6 @@ private:
     
     const uint8_t* primaryFont;
     const uint8_t* secondaryFont;
-    const uint8_t* secondaryBoldFont;
     const uint8_t* smallFont;
     
     int parseHHMMtoMinutes(const String& hhmm);

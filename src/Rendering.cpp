@@ -8,7 +8,6 @@ Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74
     : display(display),
       primaryFont(u8g2_font_helvR18_tf),
       secondaryFont(u8g2_font_helvR12_tf),
-      secondaryBoldFont(u8g2_font_helvB12_tf),
       smallFont(u8g2_font_helvR08_tr)
 {
     gfx.begin(display);
@@ -113,7 +112,6 @@ void Rendering::displayWeather(Weather &weather)
     gfx.setCursor(6 + temp_width + 8, temp_y);
     gfx.print(" " + weather.getWeatherDescription());
 
-    gfx.setFont(secondaryBoldFont);
     gfx.setCursor(6, wind_y);
     gfx.print(windDisplay);
 
