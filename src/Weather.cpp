@@ -32,6 +32,7 @@ void Weather::update() {
     }
 
     String payload = http.getString();
+    lastApiPayload = payload;
     DynamicJsonDocument doc(16384);
     DeserializationError error = deserializeJson(doc, payload);
     
@@ -238,4 +239,8 @@ float Weather::getCurrentWindGusts() const {
 
 String Weather::getWeatherDescription() const {
     return currentWeatherDescription;
+}
+
+String Weather::getLastPayload() const {
+    return lastApiPayload;
 } 
