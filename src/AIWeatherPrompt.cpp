@@ -11,6 +11,7 @@ String AIWeatherPrompt::generatePrompt(const Weather& weather) {
     prompt += "- a short sentence\n";
     prompt += "- include the actual temperature in the sentence\n";
     prompt += "- use simple words\n";
+    prompt += "- make sure the weather forecast is included in the sentence\n";
     prompt += "Weather data: ";
     prompt += weather.getLastPayload();
     
