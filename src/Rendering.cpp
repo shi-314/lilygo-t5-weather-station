@@ -107,7 +107,7 @@ void Rendering::displayWeather(Weather &weather)
     u8g2_for_adafruit_gfx.setFont(primaryFont);
     u8g2_for_adafruit_gfx.setCursor(6, temp_y);
 
-    String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " C";
+    String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " °C";
     u8g2_for_adafruit_gfx.print(temperatureDisplay);
 
     int temp_width = u8g2_for_adafruit_gfx.getUTF8Width(temperatureDisplay.c_str());
