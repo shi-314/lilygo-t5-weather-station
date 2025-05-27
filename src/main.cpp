@@ -7,6 +7,7 @@
 #include "Weather.h"
 #include "Rendering.h"
 #include "WifiErrorScreen.h"
+#include "GeminiClient.h"
 #include "boards.h"
 
 const char* ssid = ":(";
@@ -24,6 +25,7 @@ WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
 WifiErrorScreen errorScreen(display);
+GeminiClient geminiClient;
 
 void goToSleep();
 void checkWakeupReason();
@@ -69,6 +71,14 @@ void setup() {
         goToSleep();
         return;
     }
+    
+    // Initialize Gemini client
+    geminiClient.initialize();
+    
+    // Example usage of Gemini API
+    String prompt = "Generate a brief weather-related motivational quote for today.";
+    String geminiResponse = geminiClient.generateContent(prompt);
+    Serial.println("Gemini Response: " + geminiResponse);
     
     weather.update();
     weatherScreen.render();
