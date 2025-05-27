@@ -82,15 +82,12 @@ void Rendering::displayWeather(Weather &weather)
     display.setRotation(1);
     display.fillScreen(GxEPD_WHITE);
 
-    display.setTextColor(GxEPD_BLACK);
-    display.setFont(primaryFont);
-
-    display.setFont(secondaryFont);
     String batteryStatus = getBatteryStatus();
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
 
     int16_t x1, y1;
     uint16_t w, h;
+    display.setFont(secondaryFont);
     display.getTextBounds("Temp", 0, 0, &x1, &y1, &w, &h);
     int text_height = h;
 

@@ -40,11 +40,6 @@ void setup() {
     pinMode(BATTERY_PIN, INPUT);
     SPI.begin(18, 19, 23);
     
-    display.init(115200);
-    display.setRotation(1);
-    display.fillScreen(GxEPD_WHITE);
-    display.hibernate();
-    
     wifi.connect();
     if (!wifi.isConnected()) {
         Serial.println("Failed to connect to WiFi");
