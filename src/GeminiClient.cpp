@@ -21,18 +21,38 @@ bool GeminiClient::initialize() {
 String GeminiClient::makeRequest(const String& endpoint, const String& payload) {
     String url = String(baseUrl) + endpoint + "?key=" + String(apiKey);
     
+    Serial.println("Request URL: " + url);
+    Serial.println("Payload size: " + String(payload.length()) + " bytes");
+    
     http.begin(client, url);
     http.addHeader("Content-Type", "application/json");
+    
+    http.setTimeout(30000); // 30 second timeout
     
     int httpResponseCode = http.POST(payload);
     String response = "";
     
     if (httpResponseCode > 0) {
         response = http.getString();
-        // Serial.println("HTTP Response Code: " + String(httpResponseCode));
-        // Serial.println("Response: " + response);
+        Serial.println("HTTP Response Code: " + String(httpResponseCode));
+        Serial.println("Response: " + response);
     } else {
         Serial.println("Error in HTTP request: " + String(httpResponseCode));
+        Serial.println("Error details:");
+        switch(httpResponseCode) {
+            case -1: Serial.println("Connection failed"); break;
+            case -2: Serial.println("Send header failed"); break;
+            case -3: Serial.println("Send payload failed"); break;
+            case -4: Serial.println("Not connected"); break;
+            case -5: Serial.println("Connection lost"); break;
+            case -6: Serial.println("No stream"); break;
+            case -7: Serial.println("No HTTP server"); break;
+            case -8: Serial.println("Too less RAM"); break;
+            case -9: Serial.println("Encoding error"); break;
+            case -10: Serial.println("Stream write error"); break;
+            case -11: Serial.println("Read timeout"); break;
+            default: Serial.println("Unknown error");
+        }
     }
     
     http.end();
