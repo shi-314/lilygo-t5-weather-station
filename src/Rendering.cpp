@@ -8,7 +8,10 @@
 #include <algorithm>
 
 Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display) 
-    : display(display) {
+    : display(display), 
+      primaryFont(&FreeSans12pt7b),      // For main temperature display
+      secondaryFont(&FreeSans9pt7b),     // For wind, descriptions, etc.
+      smallFont(nullptr) {               // For small text like battery, meteogram labels
 }
 
 int Rendering::parseHHMMtoMinutes(const String& hhmm) {
@@ -68,9 +71,9 @@ void Rendering::displayWeather(Weather& weather) {
     display.fillScreen(GxEPD_WHITE);
 
     display.setTextColor(GxEPD_BLACK);
-    display.setFont(&FreeSans12pt7b);
+    display.setFont(primaryFont);
 
-    display.setFont(&FreeSans9pt7b);
+    display.setFont(secondaryFont);
     String batteryStatus = getBatteryStatus();
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
     
@@ -88,7 +91,7 @@ void Rendering::displayWeather(Weather& weather) {
     int meteogramH = temp_y - meteogramY - 25;
     drawMeteogram(weather, meteogramX, meteogramY, meteogramW, meteogramH);
     
-    display.setFont(&FreeSans12pt7b);
+    display.setFont(primaryFont);
     display.setCursor(6, temp_y);
     
     String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " C";
@@ -96,7 +99,7 @@ void Rendering::displayWeather(Weather& weather) {
     
     display.getTextBounds(temperatureDisplay, 0, 0, &x1, &y1, &w, &h);
     
-    display.setFont(&FreeSans9pt7b);
+    display.setFont(secondaryFont);
     display.setCursor(6 + w + 8, temp_y);
     display.print(" " + weather.getWeatherDescription());
     
@@ -104,7 +107,7 @@ void Rendering::displayWeather(Weather& weather) {
     display.print(windDisplay);
     
     display.setTextColor(GxEPD_DARKGREY);
-    display.setFont(nullptr);
+    display.setFont(smallFont);
     int16_t x1_batt, y1_batt;
     uint16_t w_batt, h_batt;
     display.getTextBounds(batteryStatus, 0, 0, &x1_batt, &y1_batt, &w_batt, &h_batt);
@@ -117,7 +120,7 @@ void Rendering::displayWeather(Weather& weather) {
 }
 
 void Rendering::drawMeteogram(Weather& weather, int x_base, int y_base, int w, int h) {
-    display.setFont(nullptr);
+    display.setFont(smallFont);
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
     std::vector<float> windGusts = weather.getHourlyWindGusts();

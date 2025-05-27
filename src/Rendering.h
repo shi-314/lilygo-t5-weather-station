@@ -4,10 +4,16 @@
 #include <GxEPD2_4G_4G.h>
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include "Weather.h"
+#include <gfxfont.h>
 
 class Rendering {
 private:
     GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
+    
+    // Font member variables for easy customization
+    const GFXfont* primaryFont;
+    const GFXfont* secondaryFont;
+    const GFXfont* smallFont;
     
     int parseHHMMtoMinutes(const String& hhmm);
     void drawMeteogram(Weather& weather, int x, int y, int w, int h);
