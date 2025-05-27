@@ -125,18 +125,61 @@ void Weather::update() {
 }
 
 String Weather::getWeatherDescription(int weatherCode) const {
+    // https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM
     switch (weatherCode) {
-        case 0: return "Clear";
-        case 1: case 2: case 3: return "Cloudy";
-        case 45: case 48: return "Foggy";
-        case 51: case 53: case 55: return "Drizzle";
-        case 61: case 63: case 65: return "Rain";
-        case 71: case 73: case 75: return "Snow";
-        case 77: return "Snow grains";
-        case 80: case 81: case 82: return "Rain showers";
-        case 85: case 86: return "Snow showers";
+        // Clear and cloudy conditions
+        case 0: case 1: case 2: case 3: return "Clear";
+        
+        // Visibility issues
+        case 4: case 5: case 6: case 7: case 8: case 9: return "Dusty";
+        case 10: case 11: case 12: return "Foggy";
+        case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47: case 48: case 49: return "Foggy";
+        
+        // Distant weather
+        case 13: case 14: case 15: case 16: return "Distant storms";
+        case 17: case 18: case 19: return "Stormy";
+        
+        // Past weather (preceding hour)
+        case 20: case 21: case 22: case 23: case 24: case 25: case 26: case 27: case 28: case 29: return "Recently wet";
+        
+        // Dust/sand storms and blowing snow
+        case 30: case 31: case 32: case 33: case 34: case 35: return "Dust storm";
+        case 36: case 37: case 38: case 39: return "Blowing snow";
+        
+        // Light precipitation
+        case 50: case 51: case 58: return "Light drizzle";
+        case 52: case 53: case 59: return "Drizzle";
+        case 54: case 55: return "Heavy drizzle";
+        case 56: case 57: return "Freezing drizzle";
+        
+        case 60: case 61: return "Light rain";
+        case 62: case 63: return "Rain";
+        case 64: case 65: return "Heavy rain";
+        case 66: case 67: return "Freezing rain";
+        case 68: case 69: return "Rain and snow";
+        
+        // Snow
+        case 70: case 71: return "Light snow";
+        case 72: case 73: return "Snow";
+        case 74: case 75: return "Heavy snow";
+        case 76: case 77: case 78: return "Snow crystals";
+        case 79: return "Ice pellets";
+        
+        // Showers
+        case 80: return "Light showers";
+        case 81: case 82: return "Heavy showers";
+        case 83: case 84: return "Mixed showers";
+        case 85: return "Snow showers";
+        case 86: return "Heavy snow showers";
+        case 87: case 88: case 89: case 90: return "Hail showers";
+        
+        // Thunderstorms
+        case 91: case 92: case 93: case 94: return "Recent storms";
         case 95: return "Thunderstorm";
         case 96: case 99: return "Thunderstorm with hail";
+        case 97: return "Heavy thunderstorm";
+        case 98: return "Dust thunderstorm";
+        
         default: return "Unknown";
     }
 }
