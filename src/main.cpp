@@ -21,7 +21,7 @@ const unsigned long sleepTime = 900000000; // Deep sleep time in microseconds (1
 
 WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
-Rendering renderer(display);
+MeteogramWeatherScreen renderer(display, weather);
 
 void goToSleep();
 void checkWakeupReason();
@@ -69,7 +69,7 @@ void setup() {
     }
     
     weather.update();
-    renderer.displayWeather(weather);
+    renderer.render();
     
     goToSleep();
 }

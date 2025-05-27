@@ -4,8 +4,9 @@
 #include <vector>
 #include <algorithm>
 
-Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display)
+MeteogramWeatherScreen::MeteogramWeatherScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display, Weather &weather)
     : display(display),
+      weather(weather),
       primaryFont(u8g2_font_helvR18_tf),
       secondaryFont(u8g2_font_helvR12_tf),
       smallFont(u8g2_font_helvR08_tr)
@@ -13,7 +14,7 @@ Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74
     gfx.begin(display);
 }
 
-int Rendering::parseHHMMtoMinutes(const String &hhmm)
+int MeteogramWeatherScreen::parseHHMMtoMinutes(const String &hhmm)
 {
     if (hhmm.length() != 5 || hhmm.charAt(2) != ':')
     {
@@ -28,7 +29,7 @@ int Rendering::parseHHMMtoMinutes(const String &hhmm)
     return hours * 60 + minutes;
 }
 
-void Rendering::drawDottedLine(int x0, int y0, int x1, int y1, uint16_t color)
+void MeteogramWeatherScreen::drawDottedLine(int x0, int y0, int x1, int y1, uint16_t color)
 {
     int dx = abs(x1 - x0);
     int dy = abs(y1 - y0);
@@ -72,7 +73,7 @@ void Rendering::drawDottedLine(int x0, int y0, int x1, int y1, uint16_t color)
     }
 }
 
-void Rendering::displayWeather(Weather &weather)
+void MeteogramWeatherScreen::render()
 {
     Serial.println("Updating display...");
 
@@ -98,7 +99,7 @@ void Rendering::displayWeather(Weather &weather)
     int meteogramY = 10;
     int meteogramW = display.width();
     int meteogramH = temp_y - meteogramY - 25;
-    drawMeteogram(weather, meteogramX, meteogramY, meteogramW, meteogramH);
+    drawMeteogram(meteogramX, meteogramY, meteogramW, meteogramH);
 
     gfx.setFont(primaryFont);
     gfx.setCursor(6, temp_y);
@@ -127,7 +128,7 @@ void Rendering::displayWeather(Weather &weather)
     Serial.println("Display updated");
 }
 
-void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, int h)
+void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
 {
     gfx.setFont(smallFont);
     gfx.setFontMode(1);
@@ -334,7 +335,7 @@ void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, i
     }
 }
 
-void Rendering::displayWifiErrorIcon()
+void MeteogramWeatherScreen::displayWifiErrorIcon()
 {
     Serial.println("Displaying WiFi error icon");
 
