@@ -1,8 +1,5 @@
 #include "Rendering.h"
 #include "battery.h"
-#include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/FreeSans12pt7b.h>
-#include "Fonts/Picopixel.h"
 #include "assets/WifiErrorIcon.h"
 #include <vector>
 #include <algorithm>
@@ -11,6 +8,7 @@ Rendering::Rendering(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74
     : display(display),
       primaryFont(u8g2_font_helvR18_tf),
       secondaryFont(u8g2_font_helvR12_tf),
+      secondaryBoldFont(u8g2_font_helvB12_tf),
       smallFont(u8g2_font_helvR08_tr)
 {
     gfx.begin(display);
@@ -111,16 +109,14 @@ void Rendering::displayWeather(Weather &weather)
 
     int temp_width = gfx.getUTF8Width(temperatureDisplay.c_str());
 
-    // Display weather description with medium font
     gfx.setFont(secondaryFont);
     gfx.setCursor(6 + temp_width + 8, temp_y);
     gfx.print(" " + weather.getWeatherDescription());
 
-    // Display wind information
+    gfx.setFont(secondaryBoldFont);
     gfx.setCursor(6, wind_y);
     gfx.print(windDisplay);
 
-    // Display battery status with small font
     gfx.setForegroundColor(GxEPD_DARKGREY);
     gfx.setFont(smallFont);
     int battery_width = gfx.getUTF8Width(batteryStatus.c_str());
@@ -136,9 +132,9 @@ void Rendering::displayWeather(Weather &weather)
 void Rendering::drawMeteogram(Weather &weather, int x_base, int y_base, int w, int h)
 {
     gfx.setFont(smallFont);
-    gfx.setFontMode(1);                  // Transparent mode
-    gfx.setForegroundColor(GxEPD_BLACK); // Text color
-    gfx.setBackgroundColor(GxEPD_WHITE); // Background color
+    gfx.setFontMode(1);
+    gfx.setForegroundColor(GxEPD_BLACK);
+    gfx.setBackgroundColor(GxEPD_WHITE);
 
     std::vector<float> temps = weather.getHourlyTemperatures();
     std::vector<float> winds = weather.getHourlyWindSpeeds();
