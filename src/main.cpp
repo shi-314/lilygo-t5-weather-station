@@ -6,6 +6,7 @@
 #include "wifi_connection.h"
 #include "Weather.h"
 #include "Rendering.h"
+#include "WifiErrorScreen.h"
 #include "boards.h"
 
 const char* ssid = ":(";
@@ -21,7 +22,8 @@ const unsigned long sleepTime = 900000000; // Deep sleep time in microseconds (1
 
 WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
-MeteogramWeatherScreen renderer(display, weather);
+MeteogramWeatherScreen weatherScreen(display, weather);
+WifiErrorScreen errorScreen(display);
 
 void goToSleep();
 void checkWakeupReason();
@@ -63,13 +65,13 @@ void setup() {
     wifi.connect();
     if (!wifi.isConnected()) {
         Serial.println("Failed to connect to WiFi");
-        renderer.displayWifiErrorIcon();
+        errorScreen.render();
         goToSleep();
         return;
     }
     
     weather.update();
-    renderer.render();
+    weatherScreen.render();
     
     goToSleep();
 }

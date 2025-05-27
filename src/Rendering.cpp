@@ -1,6 +1,5 @@
 #include "Rendering.h"
 #include "battery.h"
-#include "assets/WifiErrorIcon.h"
 #include <vector>
 #include <algorithm>
 
@@ -333,24 +332,4 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
         display.setCursor(time_x, plot_y + plot_h + bottom_padding - 6);
         display.print(lastUpdateStr);
     }
-}
-
-void MeteogramWeatherScreen::displayWifiErrorIcon()
-{
-    Serial.println("Displaying WiFi error icon");
-
-    display.init(115200);
-    display.setRotation(1);
-    display.fillScreen(GxEPD_WHITE);
-
-    int iconWidth = 16;
-    int iconHeight = 16;
-
-    int centerX = (display.width() / 2) - (iconWidth / 2);
-    int centerY = (display.height() / 2) - (iconHeight / 2);
-
-    display.drawBitmap(centerX, centerY, WifiErrorIcon, iconWidth, iconHeight, GxEPD_BLACK);
-
-    display.displayWindow(0, 0, display.width(), display.height());
-    display.hibernate();
 }

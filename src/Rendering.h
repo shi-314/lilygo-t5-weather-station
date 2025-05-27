@@ -25,7 +25,6 @@ public:
     MeteogramWeatherScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display, Weather& weather);
     
     void render() override;
-    void displayWifiErrorIcon();
 };
 
 #endif 
