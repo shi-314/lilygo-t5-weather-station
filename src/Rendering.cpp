@@ -84,10 +84,10 @@ void Rendering::displayWeather(Weather &weather)
     String batteryStatus = getBatteryStatus();
     String windDisplay = String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
 
-    gfx.setFontMode(1);                  // Transparent mode
-    gfx.setFontDirection(0);             // Left to right
-    gfx.setForegroundColor(GxEPD_BLACK); // Text color
-    gfx.setBackgroundColor(GxEPD_WHITE); // Background color
+    gfx.setFontMode(1);
+    gfx.setFontDirection(0);
+    gfx.setForegroundColor(GxEPD_BLACK);
+    gfx.setBackgroundColor(GxEPD_WHITE);
     gfx.setFont(secondaryFont);
 
     int text_height = gfx.getFontAscent() - gfx.getFontDescent();
