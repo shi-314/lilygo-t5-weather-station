@@ -9,7 +9,7 @@ String AIWeatherPrompt::generatePrompt(const Weather& weather) {
     prompt += "- a bizarre conspiracy theory describing the weather\n";
     prompt += "- make sure the sentence is very hilarious\n";
     prompt += "- a short sentence that is 18 words or less\n";
-    prompt += "- include the actual temperature in the sentence\n";
+    prompt += "- include the rough temperature in the sentence\n";
     prompt += "- make sure the weather forecast is included in the sentence\n";
     prompt += "- consider using recent conspiracy theories to make the sentence more interesting\n";
     prompt += "- the conspiracy theory should be about the weather and somewhat plausible\n";
