@@ -29,6 +29,7 @@ public:
     float getCurrentWindSpeed() const;
     float getCurrentWindGusts() const;
     String getWeatherDescription() const;
+    String getLastPayload() const;
 
 private:
     // API settings
@@ -54,6 +55,8 @@ private:
     std::vector<String> hourlyTime;
     std::vector<float> hourlyPrecipitation;
     std::vector<float> hourlyCloudCoverage;
+    
+    String lastApiPayload = "";
     
     String getWeatherDescription(int weatherCode) const;
 }; 

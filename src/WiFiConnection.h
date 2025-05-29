@@ -1,7 +1,5 @@
-#pragma once
-
-#include <Arduino.h>
-#include <WiFi.h>
+#ifndef WIFI_CONNECTION_H
+#define WIFI_CONNECTION_H
 
 class WiFiConnection {
 public:
@@ -16,3 +14,5 @@ private:
     const char* _password;
     bool connected;
 }; 
+
+#endif
