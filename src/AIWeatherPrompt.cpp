@@ -12,7 +12,6 @@ String AIWeatherPrompt::generatePrompt(const Weather& weather) {
     prompt += "- include the actual temperature in the sentence\n";
     prompt += "- use simple words\n";
     prompt += "- make sure the weather forecast is included in the sentence\n";
-    prompt += "- include conspiracy theories about the weather, climate change, lizard people, aliens, the moon landing, area 51, the illuminati etc.\n";
     prompt += "Weather data: ";
     prompt += weather.getLastPayload();
     
