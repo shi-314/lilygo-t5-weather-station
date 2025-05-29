@@ -5,7 +5,7 @@
 #include "battery.h"
 #include "WiFiConnection.h"
 #include "Weather.h"
-#include "Rendering.h"
+#include "MeteogramWeatherScreen.h"
 #include "WifiErrorScreen.h"
 #include "MessageScreen.h"
 #include "GeminiClient.h"

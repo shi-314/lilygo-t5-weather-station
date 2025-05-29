@@ -8,7 +8,7 @@ String AIWeatherPrompt::generatePrompt(const Weather& weather) {
     prompt += "You have to summarize it into one sentence in the following style:\n";
     prompt += "- a bizarre conspiracy theory describing the weather\n";
     prompt += "- a funny way\n";
-    prompt += "- a short sentence\n";
+    prompt += "- a short sentence that is 14 words or less\n";
     prompt += "- include the actual temperature in the sentence\n";
     prompt += "- use simple words\n";
     prompt += "- make sure the weather forecast is included in the sentence\n";
