@@ -1,12 +1,12 @@
-#ifndef GEMINI_CLIENT_H
-#define GEMINI_CLIENT_H
+#ifndef CHATGPT_CLIENT_H
+#define CHATGPT_CLIENT_H
 
 #include <Arduino.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-class GeminiClient {
+class ChatGPTClient {
 private:
     const char* apiKey;
     const char* baseUrl;
@@ -15,14 +15,15 @@ private:
     HTTPClient http;
     
     String makeRequest(const String& endpoint, const String& payload);
+    String base64ToByteArray(const String& base64String);
     
 public:
-    GeminiClient();
-    ~GeminiClient();
+    ChatGPTClient();
+    ~ChatGPTClient();
     
     void setModel(const String& modelName);
     String generateContent(const String& prompt);
-    bool isConnected();
+    String generateImage(const String& prompt);
 };
 
 #endif 

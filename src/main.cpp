@@ -8,7 +8,7 @@
 #include "MeteogramWeatherScreen.h"
 #include "WifiErrorScreen.h"
 #include "MessageScreen.h"
-#include "GeminiClient.h"
+#include "ChatGPTClient.h"
 #include "AIWeatherPrompt.h"
 #include "boards.h"
 
@@ -29,7 +29,7 @@ Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
 WifiErrorScreen errorScreen(display);
 MessageScreen messageScreen(display);
-GeminiClient geminiClient;
+ChatGPTClient chatGPTClient;
 AIWeatherPrompt weatherPrompt;
 
 enum ScreenType {
@@ -67,10 +67,10 @@ void displayCurrentScreen() {
             Serial.println("Displaying message screen");
             weather.update();
             String prompt = weatherPrompt.generatePrompt(weather);
-            String geminiResponse = geminiClient.generateContent(prompt);
-            Serial.println("Gemini Response: " + geminiResponse);
+            String chatGPTResponse = chatGPTClient.generateContent(prompt);
+            Serial.println("ChatGPT Response: " + chatGPTResponse);
             
-            messageScreen.setMessageText(geminiResponse);
+            messageScreen.setMessageText(chatGPTResponse);
             messageScreen.render();
             break;
         }
