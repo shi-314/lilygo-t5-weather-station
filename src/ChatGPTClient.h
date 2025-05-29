@@ -15,7 +15,6 @@ private:
     HTTPClient http;
     
     String makeRequest(const String& endpoint, const String& payload);
-    String base64ToByteArray(const String& base64String);
     
 public:
     ChatGPTClient();
@@ -23,7 +22,6 @@ public:
     
     void setModel(const String& modelName);
     String generateContent(const String& prompt);
-    String generateImage(const String& prompt);
 };
 
 #endif 
