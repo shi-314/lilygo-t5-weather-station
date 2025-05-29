@@ -7,6 +7,7 @@
 #include "Weather.h"
 #include "Rendering.h"
 #include "WifiErrorScreen.h"
+#include "MessageScreen.h"
 #include "GeminiClient.h"
 #include "AIWeatherPrompt.h"
 #include "boards.h"
@@ -26,6 +27,7 @@ WiFiConnection wifi(ssid, password);
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
 WifiErrorScreen errorScreen(display);
+MessageScreen messageScreen(display);
 GeminiClient geminiClient;
 AIWeatherPrompt weatherPrompt;
 
@@ -79,11 +81,15 @@ void setup() {
     
     // Update weather data first
     weather.update();
+    // weatherScreen.render();
     
     String prompt = weatherPrompt.generatePrompt(weather);
     String geminiResponse = geminiClient.generateContent(prompt);
     Serial.println("Gemini Response: " + geminiResponse);
-    weatherScreen.render();
+    
+    // Display the Gemini response on the screen
+    messageScreen.setMessageText(geminiResponse);
+    messageScreen.render();
     
     goToSleep();
 }
