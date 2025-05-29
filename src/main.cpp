@@ -38,7 +38,7 @@ enum ScreenType {
     SCREEN_COUNT = 2
 };
 
-RTC_DATA_ATTR int currentScreenIndex = MESSAGE_SCREEN;
+RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
 
 void goToSleep();
 void checkWakeupReason();
