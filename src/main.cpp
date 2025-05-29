@@ -12,7 +12,6 @@
 #include "AIWeatherPrompt.h"
 #include "boards.h"
 
-RTC_DATA_ATTR int currentScreenIndex = 0;
 
 const char* ssid = ":(";
 const char* password = "20009742591595504581";
@@ -38,6 +37,8 @@ enum ScreenType {
     MESSAGE_SCREEN = 1,
     SCREEN_COUNT = 2
 };
+
+RTC_DATA_ATTR int currentScreenIndex = MESSAGE_SCREEN;
 
 void goToSleep();
 void checkWakeupReason();

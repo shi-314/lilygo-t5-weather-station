@@ -10,6 +10,7 @@ class GeminiClient {
 private:
     const char* apiKey;
     const char* baseUrl;
+    String model;
     WiFiClientSecure client;
     HTTPClient http;
     
@@ -19,8 +20,8 @@ public:
     GeminiClient();
     ~GeminiClient();
     
+    void setModel(const String& modelName);
     String generateContent(const String& prompt);
-    String generateContent(const String& model, const String& prompt);
     bool isConnected();
 };
 

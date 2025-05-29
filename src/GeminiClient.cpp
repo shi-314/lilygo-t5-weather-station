@@ -7,6 +7,7 @@ const char* GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
 GeminiClient::GeminiClient() {
     apiKey = GEMINI_API_KEY;
     baseUrl = GEMINI_BASE_URL;
+    model = "gemini-2.5-flash-preview-05-20";
     client.setInsecure();
 }
 
@@ -55,11 +56,11 @@ String GeminiClient::makeRequest(const String& endpoint, const String& payload) 
     return response;
 }
 
-String GeminiClient::generateContent(const String& prompt) {
-    return generateContent("gemini-2.5-flash-preview-05-20", prompt);
+void GeminiClient::setModel(const String& modelName) {
+    model = modelName;
 }
 
-String GeminiClient::generateContent(const String& model, const String& prompt) {
+String GeminiClient::generateContent(const String& prompt) {
     String endpoint = "/v1beta/models/" + model + ":generateContent";
     
     if (prompt.length() == 0) {
