@@ -19,7 +19,6 @@ public:
     GeminiClient();
     ~GeminiClient();
     
-    bool initialize();
     String generateContent(const String& prompt);
     String generateContent(const String& model, const String& prompt);
     bool isConnected();

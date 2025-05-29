@@ -12,6 +12,8 @@
 #include "AIWeatherPrompt.h"
 #include "boards.h"
 
+RTC_DATA_ATTR int currentScreenIndex = 0;
+
 const char* ssid = ":(";
 const char* password = "20009742591595504581";
 
@@ -31,28 +33,58 @@ MessageScreen messageScreen(display);
 GeminiClient geminiClient;
 AIWeatherPrompt weatherPrompt;
 
+enum ScreenType {
+    METEOGRAM_SCREEN = 0,
+    MESSAGE_SCREEN = 1,
+    SCREEN_COUNT = 2
+};
+
 void goToSleep();
 void checkWakeupReason();
+void displayCurrentScreen();
+void cycleToNextScreen();
+bool isButtonWakeup();
 
-void checkWakeupReason() {
+bool isButtonWakeup() {
     esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
-    
-    switch(wakeupReason) {
-        case ESP_SLEEP_WAKEUP_EXT0:
-            Serial.println("Wakeup caused by external signal using RTC_IO");
+    return (wakeupReason == ESP_SLEEP_WAKEUP_EXT0);
+}
+
+void cycleToNextScreen() {
+    currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+    Serial.println("Cycled to screen: " + String(currentScreenIndex));
+}
+
+void displayCurrentScreen() {
+    switch(currentScreenIndex) {
+        case METEOGRAM_SCREEN:
+            Serial.println("Displaying meteogram screen");
+            weather.update();
+            weatherScreen.render();
             break;
-        case ESP_SLEEP_WAKEUP_TIMER:
-            Serial.println("Wakeup caused by timer");
+        case MESSAGE_SCREEN: {
+            Serial.println("Displaying message screen");
+            weather.update();
+            String prompt = weatherPrompt.generatePrompt(weather);
+            String geminiResponse = geminiClient.generateContent(prompt);
+            Serial.println("Gemini Response: " + geminiResponse);
+            
+            messageScreen.setMessageText(geminiResponse);
+            messageScreen.render();
             break;
+        }
         default:
-            Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeupReason);
+            Serial.println("Unknown screen index, defaulting to meteogram");
+            currentScreenIndex = METEOGRAM_SCREEN;
+            weather.update();
+            weatherScreen.render();
             break;
     }
 }
 
 void goToSleep() {
     Serial.println("Going to deep sleep for " + String(sleepTime / 1000000) + " seconds");
-    Serial.println("Press button to wake up early");
+    Serial.println("Press button to wake up early and cycle screens");
     
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_39, 0);
     esp_sleep_enable_timer_wakeup(sleepTime);
@@ -61,8 +93,6 @@ void goToSleep() {
 
 void setup() {
     Serial.begin(115200);
-    
-    checkWakeupReason();
     
     pinMode(BATTERY_PIN, INPUT);
     pinMode(BUTTON_1, INPUT_PULLUP);
@@ -76,21 +106,11 @@ void setup() {
         return;
     }
     
-    // Initialize Gemini client
-    geminiClient.initialize();
+    if (isButtonWakeup()) {
+        cycleToNextScreen();
+    }
     
-    // Update weather data first
-    weather.update();
-    // weatherScreen.render();
-    
-    String prompt = weatherPrompt.generatePrompt(weather);
-    String geminiResponse = geminiClient.generateContent(prompt);
-    Serial.println("Gemini Response: " + geminiResponse);
-    
-    // Display the Gemini response on the screen
-    messageScreen.setMessageText(geminiResponse);
-    messageScreen.render();
-    
+    displayCurrentScreen();
     goToSleep();
 }
 

@@ -7,15 +7,11 @@ const char* GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
 GeminiClient::GeminiClient() {
     apiKey = GEMINI_API_KEY;
     baseUrl = GEMINI_BASE_URL;
+    client.setInsecure();
 }
 
 GeminiClient::~GeminiClient() {
     http.end();
-}
-
-bool GeminiClient::initialize() {
-    client.setInsecure();
-    return true;
 }
 
 String GeminiClient::makeRequest(const String& endpoint, const String& payload) {
