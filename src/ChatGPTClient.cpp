@@ -7,7 +7,7 @@ const char* OPENAI_BASE_URL = "https://api.openai.com";
 ChatGPTClient::ChatGPTClient() {
     apiKey = OPENAI_API_KEY;
     baseUrl = OPENAI_BASE_URL;
-    model = "gpt-4";
+    model = "gpt-4.1-mini";
     client.setInsecure();
 }
 
@@ -33,7 +33,6 @@ String ChatGPTClient::makeRequest(const String& endpoint, const String& payload)
     if (httpResponseCode > 0) {
         response = http.getString();
         Serial.println("HTTP Response Code: " + String(httpResponseCode));
-        Serial.println("Response: " + response);
     } else {
         Serial.println("Error in HTTP request: " + String(httpResponseCode));
         Serial.println("Error details:");
