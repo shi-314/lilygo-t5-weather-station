@@ -12,6 +12,8 @@ String AIWeatherPrompt::generatePrompt(const Weather& weather) {
     prompt += "- include the actual temperature in the sentence\n";
     prompt += "- make sure the weather forecast is included in the sentence\n";
     prompt += "- consider using recent conspiracy theories to make the sentence more interesting\n";
+    prompt += "- the conspiracy theory should be about the weather and somewhat plausible\n";
+    prompt += "- you can use clichés about the location and culture\n";
     prompt += "- you can use the time of the day to make the sentence more interesting, but don't mention the exact time\n";
     prompt += "Weather data: ";
     prompt += weather.getLastPayload();
