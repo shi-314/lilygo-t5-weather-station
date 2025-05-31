@@ -44,7 +44,6 @@ void checkWakeupReason();
 void displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
-void runConfigurationMode();
 void updateWiFiCredentials(const String& newSSID, const String& newPassword);
 bool hasValidWiFiCredentials();
 
@@ -133,38 +132,6 @@ void updateWiFiCredentials(const String& newSSID, const String& newPassword) {
   strncpy(wifiPassword, newPassword.c_str(), sizeof(wifiPassword) - 1);
 
   Serial.println("WiFi credentials updated in RTC memory");
-}
-
-void runConfigurationMode() {
-  Serial.println("Entering configuration mode...");
-
-  ConfigurationScreen configurationScreen(display, configurationServer.getWifiAccessPointName(),
-                                          configurationServer.getWifiAccessPointPassword());
-  configurationScreen.render();
-
-  configurationServer.run([](const String& ssid, const String& password) {
-    updateWiFiCredentials(ssid, password);
-    configurationServer.stop();
-  });
-
-  unsigned long configStartTime = millis();
-
-  while (configurationServer.isRunning()) {
-    configurationServer.handleRequests();
-
-    if (digitalRead(BUTTON_1) == LOW) {
-      delay(50);  // Debounce
-      if (digitalRead(BUTTON_1) == LOW) {
-        Serial.println("Button pressed - exiting configuration mode");
-        break;
-      }
-    }
-
-    delay(10);  // Small delay to prevent watchdog issues
-  }
-
-  configurationServer.stop();
-  Serial.println("Configuration mode ended");
 }
 
 void goToSleep(uint64_t sleepTime) {
