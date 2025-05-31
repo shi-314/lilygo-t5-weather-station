@@ -3,16 +3,17 @@
 
 #include <GxEPD2_4G_4G.h>
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
+
 #include "Screen.h"
 
 class WifiErrorScreen : public Screen {
-private:
-    GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
+ private:
+  GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
 
-public:
-    WifiErrorScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display);
-    
-    void render() override;
+ public:
+  WifiErrorScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display);
+
+  void render() override;
 };
 
-#endif 
+#endif

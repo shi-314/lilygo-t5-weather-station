@@ -1,4 +1,5 @@
 #include "ConfigurationServer.h"
+
 #include <WiFi.h>
 #include <WiFiAP.h>
 
@@ -8,152 +9,124 @@ ConfigurationServer::ConfigurationServer()
       wifiAccessPointPassword("configure123"),
       server(nullptr),
       dnsServer(nullptr),
-      isRunning(false)
-{
-}
+      isRunning(false) {}
 
-void ConfigurationServer::run()
-{
-    Serial.println("Starting Configuration Server...");
-    Serial.print("Device Name: ");
-    Serial.println(deviceName);
+void ConfigurationServer::run() {
+  Serial.println("Starting Configuration Server...");
+  Serial.print("Device Name: ");
+  Serial.println(deviceName);
 
-    WiFi.disconnect(true);
-    delay(1000);
+  WiFi.disconnect(true);
+  delay(1000);
 
-    Serial.print("Setting up WiFi Access Point: ");
+  Serial.print("Setting up WiFi Access Point: ");
+  Serial.println(wifiAccessPointName);
+
+  WiFi.mode(WIFI_AP);
+  bool apStarted = WiFi.softAP(wifiAccessPointName.c_str(), wifiAccessPointPassword.c_str());
+
+  if (apStarted) {
+    Serial.println("Access Point started successfully!");
+    Serial.print("Network Name (SSID): ");
     Serial.println(wifiAccessPointName);
+    Serial.print("Password: ");
+    Serial.println(wifiAccessPointPassword);
+    Serial.print("Access Point IP: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.println("Setting up captive portal...");
 
-    WiFi.mode(WIFI_AP);
-    bool apStarted = WiFi.softAP(wifiAccessPointName.c_str(), wifiAccessPointPassword.c_str());
+    setupDNSServer();
+    setupWebServer();
 
-    if (apStarted)
-    {
-        Serial.println("Access Point started successfully!");
-        Serial.print("Network Name (SSID): ");
-        Serial.println(wifiAccessPointName);
-        Serial.print("Password: ");
-        Serial.println(wifiAccessPointPassword);
-        Serial.print("Access Point IP: ");
-        Serial.println(WiFi.softAPIP());
-        Serial.println("Setting up captive portal...");
+    isRunning = true;
+    Serial.println("Captive portal is running!");
+    Serial.println("Devices connecting to this network will be automatically redirected to the configuration page");
+  } else {
+    Serial.println("Failed to start Access Point!");
+  }
+}
 
-        setupDNSServer();
-        setupWebServer();
-
-        isRunning = true;
-        Serial.println("Captive portal is running!");
-        Serial.println("Devices connecting to this network will be automatically redirected to the configuration page");
+void ConfigurationServer::stop() {
+  if (isRunning) {
+    if (server) {
+      delete server;
+      server = nullptr;
     }
-    else
-    {
-        Serial.println("Failed to start Access Point!");
+    if (dnsServer) {
+      dnsServer->stop();
+      delete dnsServer;
+      dnsServer = nullptr;
     }
+    WiFi.softAPdisconnect(true);
+    isRunning = false;
+    Serial.println("Configuration server stopped");
+  }
 }
 
-void ConfigurationServer::stop()
-{
-    if (isRunning)
-    {
-        if (server)
-        {
-            delete server;
-            server = nullptr;
-        }
-        if (dnsServer)
-        {
-            dnsServer->stop();
-            delete dnsServer;
-            dnsServer = nullptr;
-        }
-        WiFi.softAPdisconnect(true);
-        isRunning = false;
-        Serial.println("Configuration server stopped");
-    }
+void ConfigurationServer::handleRequests() {
+  if (isRunning && dnsServer) {
+    dnsServer->processNextRequest();
+  }
 }
 
-void ConfigurationServer::handleRequests()
-{
-    if (isRunning && dnsServer)
-    {
-        dnsServer->processNextRequest();
-    }
+void ConfigurationServer::setupDNSServer() {
+  dnsServer = new DNSServer();
+  const byte DNS_PORT = 53;
+  dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
+  Serial.println("DNS Server started - all domains redirect to captive portal");
 }
 
-void ConfigurationServer::setupDNSServer()
-{
-    dnsServer = new DNSServer();
-    const byte DNS_PORT = 53;
-    dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
-    Serial.println("DNS Server started - all domains redirect to captive portal");
+void ConfigurationServer::setupWebServer() {
+  server = new AsyncWebServer(80);
+
+  server->on("/generate_204", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });  // Android
+  server->on("/fwlink", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });        // Microsoft
+  server->on("/hotspot-detect.html", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });  // iOS
+  server->on("/connectivity-check.html", HTTP_GET,
+             [this](AsyncWebServerRequest *request) { handleRoot(request); });  // Firefox
+
+  server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });
+  server->on("/config", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });
+  server->on("/save", HTTP_POST, [this](AsyncWebServerRequest *request) { handleSave(request); });
+
+  server->onNotFound([this](AsyncWebServerRequest *request) { handleNotFound(request); });
+
+  server->begin();
+  Serial.println("Web server started on port 80");
 }
 
-void ConfigurationServer::setupWebServer()
-{
-    server = new AsyncWebServer(80);
-
-    server->on("/generate_204", HTTP_GET, [this](AsyncWebServerRequest *request)
-               { handleRoot(request); }); // Android
-    server->on("/fwlink", HTTP_GET, [this](AsyncWebServerRequest *request)
-               { handleRoot(request); }); // Microsoft
-    server->on("/hotspot-detect.html", HTTP_GET, [this](AsyncWebServerRequest *request)
-               { handleRoot(request); }); // iOS
-    server->on("/connectivity-check.html", HTTP_GET, [this](AsyncWebServerRequest *request)
-               { handleRoot(request); }); // Firefox
-
-    server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request)
-               { handleRoot(request); });
-    server->on("/config", HTTP_GET, [this](AsyncWebServerRequest *request)
-               { handleRoot(request); });
-    server->on("/save", HTTP_POST, [this](AsyncWebServerRequest *request)
-               { handleSave(request); });
-
-    server->onNotFound([this](AsyncWebServerRequest *request)
-                       { handleNotFound(request); });
-
-    server->begin();
-    Serial.println("Web server started on port 80");
+void ConfigurationServer::handleRoot(AsyncWebServerRequest *request) {
+  String html = getConfigurationPage();
+  request->send(200, "text/html", html);
 }
 
-void ConfigurationServer::handleRoot(AsyncWebServerRequest *request)
-{
-    String html = getConfigurationPage();
-    request->send(200, "text/html", html);
+void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
+  String response = "<html><body><h2>Configuration Saved!</h2>";
+  response += "<p>Settings have been saved. The device will restart in 3 seconds.</p>";
+  response += "<script>setTimeout(function(){ window.close(); }, 3000);</script>";
+  response += "</body></html>";
+
+  if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
+    String ssid = request->getParam("ssid", true)->value();
+    String password = request->getParam("password", true)->value();
+
+    Serial.println("WiFi Configuration received:");
+    Serial.print("SSID: ");
+    Serial.println(ssid);
+    Serial.print("Password: ");
+    Serial.println("***");
+
+    response += "<p>SSID: " + ssid + "</p>";
+    response += "<p>The device will now connect to your WiFi network.</p>";
+  }
+
+  request->send(200, "text/html", response);
 }
 
-void ConfigurationServer::handleSave(AsyncWebServerRequest *request)
-{
-    String response = "<html><body><h2>Configuration Saved!</h2>";
-    response += "<p>Settings have been saved. The device will restart in 3 seconds.</p>";
-    response += "<script>setTimeout(function(){ window.close(); }, 3000);</script>";
-    response += "</body></html>";
+void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request) { request->redirect("/"); }
 
-    if (request->hasParam("ssid", true) && request->hasParam("password", true))
-    {
-        String ssid = request->getParam("ssid", true)->value();
-        String password = request->getParam("password", true)->value();
-
-        Serial.println("WiFi Configuration received:");
-        Serial.print("SSID: ");
-        Serial.println(ssid);
-        Serial.print("Password: ");
-        Serial.println("***");
-
-        response += "<p>SSID: " + ssid + "</p>";
-        response += "<p>The device will now connect to your WiFi network.</p>";
-    }
-
-    request->send(200, "text/html", response);
-}
-
-void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request)
-{
-    request->redirect("/");
-}
-
-String ConfigurationServer::getConfigurationPage()
-{
-    String html = R"(
+String ConfigurationServer::getConfigurationPage() {
+  String html = R"(
 <!DOCTYPE html>
 <html>
 <head>
@@ -234,9 +207,9 @@ String ConfigurationServer::getConfigurationPage()
         
         <div class="device-info">
             <strong>Device:</strong> )" +
-                  deviceName + R"(<br>
+                deviceName + R"(<br>
             <strong>Network:</strong> )" +
-                  wifiAccessPointName + R"(
+                wifiAccessPointName + R"(
         </div>
         
         <div class="info">
@@ -261,15 +234,9 @@ String ConfigurationServer::getConfigurationPage()
 </html>
     )";
 
-    return html;
+  return html;
 }
 
-String ConfigurationServer::getWifiAccessPointName() const
-{
-    return wifiAccessPointName;
-}
+String ConfigurationServer::getWifiAccessPointName() const { return wifiAccessPointName; }
 
-String ConfigurationServer::getWifiAccessPointPassword() const
-{
-    return wifiAccessPointPassword;
-}
+String ConfigurationServer::getWifiAccessPointPassword() const { return wifiAccessPointPassword; }

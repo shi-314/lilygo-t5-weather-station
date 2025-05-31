@@ -3,34 +3,34 @@
 
 #include <Arduino.h>
 #include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
+#include <ESPAsyncWebServer.h>
 
 class ConfigurationServer {
-public:
-    ConfigurationServer();
-    void run();
-    void stop();
-    void handleRequests();
-    
-    String getWifiAccessPointName() const;
-    String getWifiAccessPointPassword() const;
+ public:
+  ConfigurationServer();
+  void run();
+  void stop();
+  void handleRequests();
 
-private:
-    String deviceName;
-    String wifiAccessPointName;
-    String wifiAccessPointPassword;
-    
-    AsyncWebServer* server;
-    DNSServer* dnsServer;
-    bool isRunning;
-    
-    void setupWebServer();
-    void setupDNSServer();
-    String getConfigurationPage();
-    void handleRoot(AsyncWebServerRequest *request);
-    void handleSave(AsyncWebServerRequest *request);
-    void handleNotFound(AsyncWebServerRequest *request);
+  String getWifiAccessPointName() const;
+  String getWifiAccessPointPassword() const;
+
+ private:
+  String deviceName;
+  String wifiAccessPointName;
+  String wifiAccessPointPassword;
+
+  AsyncWebServer *server;
+  DNSServer *dnsServer;
+  bool isRunning;
+
+  void setupWebServer();
+  void setupDNSServer();
+  String getConfigurationPage();
+  void handleRoot(AsyncWebServerRequest *request);
+  void handleSave(AsyncWebServerRequest *request);
+  void handleNotFound(AsyncWebServerRequest *request);
 };
 
-#endif 
+#endif

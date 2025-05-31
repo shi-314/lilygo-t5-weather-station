@@ -2,9 +2,9 @@
 #define SCREEN_H
 
 class Screen {
-public:
-    virtual ~Screen() = default;
-    virtual void render() = 0;
+ public:
+  virtual ~Screen() = default;
+  virtual void render() = 0;
 };
 
-#endif 
+#endif
