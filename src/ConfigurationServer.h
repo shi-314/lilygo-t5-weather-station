@@ -26,12 +26,12 @@ class ConfigurationServer {
   DNSServer *dnsServer;
   bool isRunning;
 
-  String htmlTemplate;  // Cached HTML template
+  String htmlTemplate;
 
   void setupWebServer();
   void setupDNSServer();
   String getConfigurationPage();
-  bool loadHtmlTemplate();  // Returns success/failure, loads once
+  bool loadHtmlTemplate();
   void handleRoot(AsyncWebServerRequest *request);
   void handleSave(AsyncWebServerRequest *request);
   void handleNotFound(AsyncWebServerRequest *request);
