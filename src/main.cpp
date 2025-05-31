@@ -165,7 +165,6 @@ void runConfigurationMode() {
 
   configurationServer.stop();
   Serial.println("Configuration mode ended");
-  //   ESP.restart();
 }
 
 void goToSleep(uint64_t sleepTime) {
@@ -182,7 +181,7 @@ void setup() {
 
   pinMode(BATTERY_PIN, INPUT);
   pinMode(BUTTON_1, INPUT_PULLUP);
-  SPI.begin(18, 19, 23);
+  SPI.begin(EPD_SCLK, EPD_MISO, EPD_MOSI);
 
   if (!isButtonWakeup()) {
     if (!hasValidWiFiCredentials()) {
