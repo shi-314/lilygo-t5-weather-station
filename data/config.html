@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Station Configuration</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            max-width: 400px;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #e0e0e0;
+            color: #000000;
+            line-height: 1.2;
+        }
+
+        .container {
+            background: #f0f0f0;
+            padding: 15px;
+            border: 2px solid #000000;
+            margin: 0;
+        }
+
+        h1 {
+            color: #000000;
+            text-align: center;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: bold;
+            color: #000000;
+            font-size: 12px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #000000;
+            border-radius: 0;
+            font-size: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border: 2px solid #000000;
+            outline: none;
+            background-color: #ffffff;
+        }
+
+        .btn {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 8px 15px;
+            border: 1px solid #000000;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #333333;
+        }
+
+        .info {
+            background-color: #d0d0d0;
+            border: 1px solid #000000;
+            padding: 8px;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+
+        .device-info {
+            text-align: center;
+            color: #000000;
+            margin-bottom: 15px;
+            font-size: 11px;
+            border: 1px solid #000000;
+            padding: 5px;
+            background-color: #d0d0d0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>WEATHER STATION SETUP</h1>
+
+        <div class="device-info">
+            DEVICE: {{DEVICE_NAME}}<br>
+            NETWORK: {{AP_NAME}}
+        </div>
+
+        <div class="info">
+            Configure WiFi network connection for weather station.
+        </div>
+
+        <form method="POST" action="/save">
+            <div class="form-group">
+                <label for="ssid">WIFI NETWORK (SSID):</label>
+                <input type="text" id="ssid" name="ssid" required placeholder="Enter network name">
+            </div>
+
+            <div class="form-group">
+                <label for="password">WIFI PASSWORD:</label>
+                <input type="password" id="password" name="password" required placeholder="Enter password">
+            </div>
+
+            <button type="submit" class="btn">SAVE CONFIG</button>
+        </form>
+    </div>
+</body>
+
+</html>

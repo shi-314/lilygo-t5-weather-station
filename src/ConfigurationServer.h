@@ -5,6 +5,7 @@
 #include <AsyncTCP.h>
 #include <DNSServer.h>
 #include <ESPAsyncWebServer.h>
+#include <SPIFFS.h>
 
 class ConfigurationServer {
  public:
@@ -25,9 +26,12 @@ class ConfigurationServer {
   DNSServer *dnsServer;
   bool isRunning;
 
+  String htmlTemplate;  // Cached HTML template
+
   void setupWebServer();
   void setupDNSServer();
   String getConfigurationPage();
+  bool loadHtmlTemplate();  // Returns success/failure, loads once
   void handleRoot(AsyncWebServerRequest *request);
   void handleSave(AsyncWebServerRequest *request);
   void handleNotFound(AsyncWebServerRequest *request);

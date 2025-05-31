@@ -1,5 +1,6 @@
 #include "ConfigurationServer.h"
 
+#include <SPIFFS.h>
 #include <WiFi.h>
 #include <WiFiAP.h>
 
@@ -15,6 +16,20 @@ void ConfigurationServer::run() {
   Serial.println("Starting Configuration Server...");
   Serial.print("Device Name: ");
   Serial.println(deviceName);
+
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS Mount Failed - filesystem must be uploaded first");
+    return;
+  }
+  Serial.println("SPIFFS initialized successfully");
+
+  if (!loadHtmlTemplate()) {
+    Serial.println("Failed to load HTML template");
+    SPIFFS.end();
+    return;
+  }
+  Serial.println("HTML template loaded successfully");
+  SPIFFS.end();
 
   WiFi.disconnect(true);
   delay(1000);
@@ -125,115 +140,28 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
 
 void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request) { request->redirect("/"); }
 
-String ConfigurationServer::getConfigurationPage() {
-  String html = R"(
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Station Configuration</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        input[type="text"]:focus, input[type="password"]:focus {
-            border-color: #4CAF50;
-            outline: none;
-        }
-        .btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-        .info {
-            background-color: #e7f3ff;
-            border: 1px solid #b3d9ff;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .device-info {
-            text-align: center;
-            color: #666;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🌤️ Weather Station Setup</h1>
-        
-        <div class="device-info">
-            <strong>Device:</strong> )" +
-                deviceName + R"(<br>
-            <strong>Network:</strong> )" +
-                wifiAccessPointName + R"(
-        </div>
-        
-        <div class="info">
-            <strong>Welcome!</strong> Configure your weather station to connect to your WiFi network.
-        </div>
-        
-        <form method="POST" action="/save">
-            <div class="form-group">
-                <label for="ssid">WiFi Network Name (SSID):</label>
-                <input type="text" id="ssid" name="ssid" required placeholder="Enter your WiFi network name">
-            </div>
-            
-            <div class="form-group">
-                <label for="password">WiFi Password:</label>
-                <input type="password" id="password" name="password" required placeholder="Enter your WiFi password">
-            </div>
-            
-            <button type="submit" class="btn">Save Configuration</button>
-        </form>
-    </div>
-</body>
-</html>
-    )";
+bool ConfigurationServer::loadHtmlTemplate() {
+  File file = SPIFFS.open("/config.html", "r");
+  if (!file) {
+    Serial.println("Failed to open config.html file");
+    return false;
+  }
 
+  htmlTemplate = file.readString();
+  file.close();
+
+  if (htmlTemplate.length() == 0) {
+    Serial.println("config.html file is empty");
+    return false;
+  }
+
+  return true;
+}
+
+String ConfigurationServer::getConfigurationPage() {
+  String html = htmlTemplate;
+  html.replace("{{DEVICE_NAME}}", deviceName);
+  html.replace("{{AP_NAME}}", wifiAccessPointName);
   return html;
 }
 
