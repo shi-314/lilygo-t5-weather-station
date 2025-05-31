@@ -153,12 +153,14 @@
         <form id="configForm">
             <div class="form-group">
                 <label for="ssid">WIFI NETWORK (SSID):</label>
-                <input type="text" id="ssid" name="ssid" required placeholder="Enter network name">
+                <input type="text" id="ssid" name="ssid" required placeholder="Enter network name"
+                    value="{{CURRENT_SSID}}">
             </div>
 
             <div class="form-group">
                 <label for="password">WIFI PASSWORD:</label>
-                <input type="text" id="password" name="password" required placeholder="Enter password">
+                <input type="text" id="password" name="password" required placeholder="Enter password"
+                    value="{{CURRENT_PASSWORD}}">
             </div>
 
             <button type="submit" class="btn" id="submitBtn">SAVE CONFIG</button>

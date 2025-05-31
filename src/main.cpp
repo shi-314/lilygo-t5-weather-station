@@ -29,7 +29,7 @@ const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microsec
 
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
-ConfigurationServer configurationServer;
+ConfigurationServer configurationServer(wifiSSID, wifiPassword);
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
 

@@ -13,7 +13,7 @@ using OnSaveCallback = std::function<void(const String &ssid, const String &pass
 
 class ConfigurationServer {
  public:
-  ConfigurationServer();
+  ConfigurationServer(const char *currentSSID, const char *currentPassword);
   void run(OnSaveCallback onSaveCallback);
   void stop();
   bool isRunning() const;
@@ -26,6 +26,9 @@ class ConfigurationServer {
   String deviceName;
   String wifiAccessPointName;
   String wifiAccessPointPassword;
+
+  const char *currentWifiSSID;
+  const char *currentWifiPassword;
 
   AsyncWebServer *server;
   DNSServer *dnsServer;
