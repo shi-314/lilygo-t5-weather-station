@@ -15,8 +15,8 @@
 #include "battery.h"
 #include "boards.h"
 
-RTC_DATA_ATTR char wifiSSID[64] = ":(";
-RTC_DATA_ATTR char wifiPassword[64] = "20009742591595504581";
+RTC_DATA_ATTR char wifiSSID[64] = "";
+RTC_DATA_ATTR char wifiPassword[64] = "";
 
 // Berlin
 const float latitude = 52.520008;

@@ -83,6 +83,11 @@
             background-color: #333333;
         }
 
+        .btn:disabled {
+            background-color: #666666;
+            cursor: not-allowed;
+        }
+
         .info {
             background-color: #d0d0d0;
             border: 1px solid #000000;
@@ -100,6 +105,33 @@
             padding: 5px;
             background-color: #d0d0d0;
         }
+
+        .status {
+            padding: 10px;
+            border: 1px solid #000000;
+            margin: 10px 0;
+            font-size: 11px;
+            text-align: center;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #28a745;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
+        }
+
+        .status.loading {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+        }
     </style>
 </head>
 
@@ -116,7 +148,9 @@
             Configure WiFi network connection for weather station.
         </div>
 
-        <form method="POST" action="/save">
+        <div id="status" class="status"></div>
+
+        <form id="configForm">
             <div class="form-group">
                 <label for="ssid">WIFI NETWORK (SSID):</label>
                 <input type="text" id="ssid" name="ssid" required placeholder="Enter network name">
@@ -127,9 +161,59 @@
                 <input type="text" id="password" name="password" required placeholder="Enter password">
             </div>
 
-            <button type="submit" class="btn">SAVE CONFIG</button>
+            <button type="submit" class="btn" id="submitBtn">SAVE CONFIG</button>
         </form>
     </div>
+
+    <script>
+        document.getElementById('configForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const statusDiv = document.getElementById('status');
+            const ssid = document.getElementById('ssid').value;
+            const password = document.getElementById('password').value;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'SAVING...';
+            statusDiv.className = 'status loading';
+            statusDiv.textContent = 'Saving configuration...';
+            statusDiv.style.display = 'block';
+
+            try {
+                const formData = new FormData();
+                formData.append('ssid', ssid);
+                formData.append('password', password);
+
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✓ Configuration saved! Closing window...';
+
+                    setTimeout(() => {
+                        try {
+                            window.close();
+                        } catch (e) {
+                            statusDiv.textContent = '✓ Configuration saved! You can now close this page and disconnect from the configuration network.';
+                        }
+                    }, 1500);
+
+                } else {
+                    throw new Error('Failed to save configuration');
+                }
+
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = 'Error saving configuration. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'SAVE CONFIG';
+            }
+        });
+    </script>
 </body>
 
 </html>

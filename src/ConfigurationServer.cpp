@@ -118,12 +118,6 @@ void ConfigurationServer::handleRoot(AsyncWebServerRequest *request) {
 }
 
 void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
-  String response = "<html><body><h2>Configuration Saved!</h2>";
-  response += "<script>setTimeout(function(){ window.close(); }, 3000);</script>";
-  response += "</body></html>";
-
-  request->send(200, "text/html", response);
-
   if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
     String ssid = request->getParam("ssid", true)->value();
     String password = request->getParam("password", true)->value();
@@ -134,7 +128,11 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
     Serial.print("Password: ");
     Serial.println(password);
 
+    request->send(200, "text/plain", "OK");
+
     onSaveCallback(ssid, password);
+  } else {
+    request->send(400, "text/plain", "Missing parameters");
   }
 }
 
