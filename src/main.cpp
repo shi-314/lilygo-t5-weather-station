@@ -61,10 +61,8 @@ void displayCurrentScreen() {
                                               configurationServer.getWifiAccessPointPassword());
       configurationScreen.render();
 
-      configurationServer.run([](const String& ssid, const String& password) {
-        updateWiFiCredentials(ssid, password);
-        configurationServer.stop();
-      });
+      configurationServer.run(
+          [](const String& ssid, const String& password) { updateWiFiCredentials(ssid, password); });
 
       while (configurationServer.isRunning()) {
         configurationServer.handleRequests();

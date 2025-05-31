@@ -136,6 +136,8 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
   } else {
     request->send(400, "text/plain", "Missing parameters");
   }
+
+  stop();
 }
 
 void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request) { request->redirect("/"); }

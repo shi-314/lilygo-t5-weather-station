@@ -297,18 +297,14 @@
                     statusDiv.className = 'status success';
                     statusDiv.textContent = '✓ Configuration saved! Closing window...';
 
-                    setTimeout(() => {
-                        try {
-                            window.close();
-                        } catch (e) {
-                            statusDiv.textContent = '✓ Configuration saved! You can now close this page and disconnect from the configuration network.';
-                        }
-                    }, 1500);
-
+                    try {
+                        window.close();
+                    } catch (e) {
+                        statusDiv.textContent = '✓ Configuration saved!';
+                    }
                 } else {
                     throw new Error('Failed to save configuration');
                 }
-
             } catch (error) {
                 statusDiv.className = 'status error';
                 statusDiv.textContent = 'Error saving configuration. Please try again.';
