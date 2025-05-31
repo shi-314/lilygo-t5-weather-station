@@ -59,6 +59,13 @@
             letter-spacing: 0.025em;
         }
 
+        .optional-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
         input[type="text"],
         input[type="password"] {
             width: 100%;
@@ -221,6 +228,10 @@
                 color: #cbd5e1;
             }
 
+            .optional-label {
+                color: #64748b;
+            }
+
             input[type="text"],
             input[type="password"] {
                 background-color: rgba(51, 65, 85, 0.5);
@@ -261,6 +272,13 @@
                     value="{{CURRENT_PASSWORD}}" autocomplete="off" autocapitalize="none" autocorrect="off">
             </div>
 
+            <div class="form-group">
+                <label for="openaiApiKey">OpenAI API Key <span class="optional-label">(optional)</span></label>
+                <input type="text" id="openaiApiKey" name="openaiApiKey"
+                    placeholder="sk-proj-... (for AI weather messages)" value="{{CURRENT_OPENAI_KEY}}"
+                    autocomplete="off" autocapitalize="none" autocorrect="off">
+            </div>
+
             <button type="submit" class="btn" id="submitBtn">Save Configuration</button>
         </form>
     </div>
@@ -276,6 +294,7 @@
             const statusDiv = document.getElementById('status');
             const ssid = document.getElementById('ssid').value;
             const password = document.getElementById('password').value;
+            const openaiApiKey = document.getElementById('openaiApiKey').value;
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
@@ -287,6 +306,7 @@
                 const formData = new FormData();
                 formData.append('ssid', ssid);
                 formData.append('password', password);
+                formData.append('openaiApiKey', openaiApiKey);
 
                 const response = await fetch('/save', {
                     method: 'POST',

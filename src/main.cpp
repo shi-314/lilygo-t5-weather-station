@@ -17,9 +17,7 @@
 
 RTC_DATA_ATTR char wifiSSID[64] = "";
 RTC_DATA_ATTR char wifiPassword[64] = "";
-RTC_DATA_ATTR char openaiApiKey[200] =
-    "sk-proj-WeU2rAiH3iICY4-9firYPtXIg9GrL47HTCMI1nbby3aapOlTNLiIISeJICRgFop-cw62RKtGAFT3BlbkFJ3O2LGwGpg8y5g4_A-"
-    "zHCbEDKtM8TooteB4Lb5IbY8Pb9OMAQLonYVV-AWFXI5oyFlThf5p3TcA";
+RTC_DATA_ATTR char openaiApiKey[200] = "";
 
 // Berlin
 const float latitude = 52.520008;
@@ -32,7 +30,7 @@ const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microsec
 
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
-ConfigurationServer configurationServer(wifiSSID, wifiPassword);
+ConfigurationServer configurationServer(wifiSSID, wifiPassword, openaiApiKey);
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
 
@@ -42,9 +40,12 @@ void goToSleep(uint64_t sleepTime);
 void displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
-void updateWiFiCredentials(const String& newSSID, const String& newPassword);
+void updateConfiguration(const String& newSSID, const String& newPassword, const String& newOpenaiKey);
+bool hasValidOpenaiApiKey();
 
 bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
+
+bool hasValidOpenaiApiKey() { return strlen(openaiApiKey) > 0; }
 
 bool isButtonWakeup() {
   esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
@@ -53,6 +54,12 @@ bool isButtonWakeup() {
 
 void cycleToNextScreen() {
   currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+
+  // Skip MESSAGE_SCREEN if no OpenAI API key is configured
+  if (currentScreenIndex == MESSAGE_SCREEN && !hasValidOpenaiApiKey()) {
+    currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+  }
+
   Serial.println("Cycled to screen: " + String(currentScreenIndex));
 }
 
@@ -64,8 +71,9 @@ void displayCurrentScreen() {
                                               configurationServer.getWifiAccessPointPassword());
       configurationScreen.render();
 
-      configurationServer.run(
-          [](const String& ssid, const String& password) { updateWiFiCredentials(ssid, password); });
+      configurationServer.run([](const String& ssid, const String& password, const String& openaiKey) {
+        updateConfiguration(ssid, password, openaiKey);
+      });
 
       while (configurationServer.isRunning()) {
         configurationServer.handleRequests();
@@ -112,7 +120,7 @@ void displayCurrentScreen() {
   }
 }
 
-void updateWiFiCredentials(const String& newSSID, const String& newPassword) {
+void updateConfiguration(const String& newSSID, const String& newPassword, const String& newOpenaiKey) {
   if (newSSID.length() >= sizeof(wifiSSID)) {
     Serial.println("Error: SSID too long, maximum length is " + String(sizeof(wifiSSID) - 1));
     return;
@@ -123,13 +131,22 @@ void updateWiFiCredentials(const String& newSSID, const String& newPassword) {
     return;
   }
 
+  if (newOpenaiKey.length() >= sizeof(openaiApiKey)) {
+    Serial.println("Error: OpenAI API key too long, maximum length is " + String(sizeof(openaiApiKey) - 1));
+    return;
+  }
+
   memset(wifiSSID, 0, sizeof(wifiSSID));
   memset(wifiPassword, 0, sizeof(wifiPassword));
+  memset(openaiApiKey, 0, sizeof(openaiApiKey));
 
   strncpy(wifiSSID, newSSID.c_str(), sizeof(wifiSSID) - 1);
   strncpy(wifiPassword, newPassword.c_str(), sizeof(wifiPassword) - 1);
+  strncpy(openaiApiKey, newOpenaiKey.c_str(), sizeof(openaiApiKey) - 1);
 
-  Serial.println("WiFi credentials updated in RTC memory");
+  Serial.println("Configuration updated in RTC memory");
+  Serial.println("WiFi SSID: " + String(wifiSSID));
+  Serial.println("OpenAI API Key: " + String(hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]"));
 }
 
 void goToSleep(uint64_t sleepTime) {
