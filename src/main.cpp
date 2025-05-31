@@ -3,7 +3,6 @@
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include <time.h>
 
-#include "AIWeatherPrompt.h"
 #include "ChatGPTClient.h"
 #include "ConfigurationScreen.h"
 #include "ConfigurationServer.h"
@@ -18,6 +17,15 @@
 RTC_DATA_ATTR char wifiSSID[64] = "";
 RTC_DATA_ATTR char wifiPassword[64] = "";
 RTC_DATA_ATTR char openaiApiKey[200] = "";
+RTC_DATA_ATTR char aiWeatherPrompt[1024] =
+    "I will share a JSON payload with you from the Open Meteo API which has weather forecast data for the current "
+    "day. You have to summarize it into one sentence:\n"
+    "- 18 words or less\n"
+    "- include the rough temperature in the sentence\n"
+    "- forecast for the whole day is included in the sentence\n"
+    "- use the time of the day to make the sentence more interesting, but don't mention the exact time\n"
+    "- don't mention the location\n"
+    "- only include the current weather and the forecast for the remaining day, not the past\n";
 
 // Berlin
 const float latitude = 52.520008;
@@ -100,9 +108,9 @@ void displayCurrentScreen() {
     case MESSAGE_SCREEN: {
       Serial.println("Displaying message screen");
       weather.update();
-      AIWeatherPrompt weatherPrompt;
+      String prompt = aiWeatherPrompt;
+      prompt += weather.getLastPayload();
       ChatGPTClient chatGPTClient(openaiApiKey);
-      String prompt = weatherPrompt.generatePrompt(weather);
       String chatGPTResponse = chatGPTClient.generateContent(prompt);
       Serial.println("ChatGPT Response: " + chatGPTResponse);
 
