@@ -6,7 +6,7 @@ WiFiConnection::WiFiConnection(const char* ssid, const char* password)
     : _ssid(ssid), _password(password), connected(false) {}
 
 void WiFiConnection::connect() {
-  Serial.print("Connecting to WiFi");
+  Serial.printf("Connecting to WiFi: %s\n", _ssid);
   WiFi.begin(_ssid, _password);
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {

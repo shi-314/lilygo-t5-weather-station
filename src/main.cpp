@@ -27,7 +27,6 @@ GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
 
 const unsigned long sleepTime = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
-WiFiConnection wifi(wifiSSID, wifiPassword);
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
 WifiErrorScreen errorScreen(display);
@@ -101,10 +100,7 @@ void updateWiFiCredentials(const String& newSSID, const String& newPassword) {
   memset(wifiPassword, 0, sizeof(wifiPassword));
 
   strncpy(wifiSSID, newSSID.c_str(), sizeof(wifiSSID) - 1);
-  wifiSSID[sizeof(wifiSSID) - 1] = '\0';
-
   strncpy(wifiPassword, newPassword.c_str(), sizeof(wifiPassword) - 1);
-  wifiPassword[sizeof(wifiPassword) - 1] = '\0';
 
   Serial.println("WiFi credentials updated in RTC memory");
 }
@@ -117,12 +113,6 @@ void runConfigurationMode() {
   configurationScreen.render();
 
   configurationServer.run([](const String& ssid, const String& password) {
-    Serial.println("Configuration received via callback:");
-    Serial.print("SSID: ");
-    Serial.println(ssid);
-    Serial.print("Password: ");
-    Serial.println("***");
-
     updateWiFiCredentials(ssid, password);
     configurationServer.stop();
   });
@@ -132,7 +122,6 @@ void runConfigurationMode() {
   while (configurationServer.isRunning()) {
     configurationServer.handleRequests();
 
-    // Check if button is pressed to exit config mode
     if (digitalRead(BUTTON_1) == LOW) {
       delay(50);  // Debounce
       if (digitalRead(BUTTON_1) == LOW) {
@@ -146,8 +135,6 @@ void runConfigurationMode() {
 
   configurationServer.stop();
   Serial.println("Configuration mode ended");
-
-  // Restart the device to apply new configuration
   ESP.restart();
 }
 
@@ -173,6 +160,7 @@ void setup() {
     return;
   }
 
+  WiFiConnection wifi(wifiSSID, wifiPassword);
   wifi.connect();
   if (!wifi.isConnected()) {
     Serial.println("Failed to connect to WiFi");

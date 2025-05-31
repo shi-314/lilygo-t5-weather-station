@@ -119,9 +119,10 @@ void ConfigurationServer::handleRoot(AsyncWebServerRequest *request) {
 
 void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
   String response = "<html><body><h2>Configuration Saved!</h2>";
-  response += "<p>Settings have been saved. The device will restart in 3 seconds.</p>";
   response += "<script>setTimeout(function(){ window.close(); }, 3000);</script>";
   response += "</body></html>";
+
+  request->send(200, "text/html", response);
 
   if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
     String ssid = request->getParam("ssid", true)->value();
@@ -131,15 +132,10 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
     Serial.print("SSID: ");
     Serial.println(ssid);
     Serial.print("Password: ");
-    Serial.println("***");
-
-    response += "<p>SSID: " + ssid + "</p>";
-    response += "<p>The device will now connect to your WiFi network.</p>";
+    Serial.println(password);
 
     onSaveCallback(ssid, password);
   }
-
-  request->send(200, "text/html", response);
 }
 
 void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request) { request->redirect("/"); }
