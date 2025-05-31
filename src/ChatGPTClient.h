@@ -17,7 +17,7 @@ class ChatGPTClient {
   String makeRequest(const String& endpoint, const String& payload);
 
  public:
-  ChatGPTClient();
+  ChatGPTClient(const char* apiKey);
   ~ChatGPTClient();
 
   void setModel(const String& modelName);

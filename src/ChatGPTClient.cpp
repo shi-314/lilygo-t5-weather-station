@@ -1,13 +1,9 @@
 #include "ChatGPTClient.h"
 
-// Replace with your actual OpenAI API key
-const char* OPENAI_API_KEY =
-    "sk-proj-WeU2rAiH3iICY4-9firYPtXIg9GrL47HTCMI1nbby3aapOlTNLiIISeJICRgFop-cw62RKtGAFT3BlbkFJ3O2LGwGpg8y5g4_A-"
-    "zHCbEDKtM8TooteB4Lb5IbY8Pb9OMAQLonYVV-AWFXI5oyFlThf5p3TcA";
 const char* OPENAI_BASE_URL = "https://api.openai.com";
 
-ChatGPTClient::ChatGPTClient() {
-  apiKey = OPENAI_API_KEY;
+ChatGPTClient::ChatGPTClient(const char* apiKey) {
+  this->apiKey = apiKey;
   baseUrl = OPENAI_BASE_URL;
   model = "gpt-4.1-mini";
   client.setInsecure();

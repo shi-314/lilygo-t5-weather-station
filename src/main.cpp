@@ -17,6 +17,9 @@
 
 RTC_DATA_ATTR char wifiSSID[64] = "";
 RTC_DATA_ATTR char wifiPassword[64] = "";
+RTC_DATA_ATTR char openaiApiKey[200] =
+    "sk-proj-WeU2rAiH3iICY4-9firYPtXIg9GrL47HTCMI1nbby3aapOlTNLiIISeJICRgFop-cw62RKtGAFT3BlbkFJ3O2LGwGpg8y5g4_A-"
+    "zHCbEDKtM8TooteB4Lb5IbY8Pb9OMAQLonYVV-AWFXI5oyFlThf5p3TcA";
 
 // Berlin
 const float latitude = 52.520008;
@@ -90,7 +93,7 @@ void displayCurrentScreen() {
       Serial.println("Displaying message screen");
       weather.update();
       AIWeatherPrompt weatherPrompt;
-      ChatGPTClient chatGPTClient;
+      ChatGPTClient chatGPTClient(openaiApiKey);
       String prompt = weatherPrompt.generatePrompt(weather);
       String chatGPTResponse = chatGPTClient.generateContent(prompt);
       Serial.println("ChatGPT Response: " + chatGPTResponse);
