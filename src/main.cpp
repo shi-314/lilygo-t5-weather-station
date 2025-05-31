@@ -25,7 +25,7 @@ const float longitude = 13.404954;
 GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
     GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
-const unsigned long sleepTime = 900000000;  // Deep sleep time in microseconds (15 minutes)
+const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
@@ -168,7 +168,7 @@ void runConfigurationMode() {
   //   ESP.restart();
 }
 
-void goToSleep() {
+void goToSleep(uint64_t sleepTime) {
   Serial.println("Going to deep sleep for " + String(sleepTime / 1000000) + " seconds");
   Serial.println("Press button to wake up early and cycle screens");
 
@@ -208,7 +208,7 @@ void setup() {
   }
 
   displayCurrentScreen();
-  goToSleep();
+  goToSleep(deepSleepMicros);
 }
 
 void loop() {}
