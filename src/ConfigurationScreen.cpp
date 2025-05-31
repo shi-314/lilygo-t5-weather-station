@@ -2,16 +2,12 @@
 
 ConfigurationScreen::ConfigurationScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display,
                                          const String& accessPointName, const String& accessPointPassword)
-    : display(display), accessPointName(accessPointName), accessPointPassword(accessPointPassword) {}
+    : display(display), accessPointName(accessPointName), accessPointPassword(accessPointPassword) {
+  gfx.begin(display);
+}
 
 String ConfigurationScreen::generateWiFiQRString() const {
   String wifiQRCodeString = "WIFI:T:WPA2;S:" + accessPointName + ";P:" + accessPointPassword + ";H:false;;";
-
-  Serial.print("Generated WiFi QR String length: ");
-  Serial.println(wifiQRCodeString.length());
-  Serial.print("Full WiFi QR String: ");
-  Serial.println(wifiQRCodeString);
-
   return wifiQRCodeString;
 }
 
@@ -19,11 +15,6 @@ void ConfigurationScreen::drawQRCode(const String& wifiString, int x, int y, int
   const uint8_t qrCodeVersion4 = 4;
   uint8_t qrCodeDataBuffer[qrcode_getBufferSize(qrCodeVersion4)];
   QRCode qrCodeInstance;
-
-  Serial.print("Attempting to generate QR code for: ");
-  Serial.println(wifiString);
-  Serial.print("String length: ");
-  Serial.println(wifiString.length());
 
   int qrGenerationResult =
       qrcode_initText(&qrCodeInstance, qrCodeDataBuffer, qrCodeVersion4, ECC_MEDIUM, wifiString.c_str());
@@ -33,10 +24,6 @@ void ConfigurationScreen::drawQRCode(const String& wifiString, int x, int y, int
     Serial.println(qrGenerationResult);
     return;
   }
-
-  Serial.print("QR Code generated successfully! Size: ");
-  Serial.print(qrCodeInstance.size);
-  Serial.println(" modules");
 
   for (uint8_t qrModuleY = 0; qrModuleY < qrCodeInstance.size; qrModuleY++) {
     for (uint8_t qrModuleX = 0; qrModuleX < qrCodeInstance.size; qrModuleX++) {
@@ -77,30 +64,37 @@ void ConfigurationScreen::render() {
   const int qrCodeQuietZonePixels = 6;
 
   int qrCodePositionX = display.width() - qrCodePixelSize - qrCodeQuietZonePixels - 5;
-  int qrCodePositionY = 10;
+  int qrCodePositionY = (display.height() - qrCodePixelSize) / 2;
 
   int currentTextLineY = 15;
   int availableTextWidth = qrCodePositionX - textLeftMargin - 8;
 
+  gfx.setFont(u8g2_font_open_iconic_embedded_2x_t);
+  gfx.setFontMode(1);
+  gfx.setForegroundColor(GxEPD_BLACK);
+  gfx.setBackgroundColor(GxEPD_WHITE);
+  gfx.setCursor(textLeftMargin, currentTextLineY + 12);
+  gfx.print((char)66);  // gear icon
+
+  gfx.setFont(u8g2_font_helvB08_tr);
+  gfx.setCursor(textLeftMargin + 20, currentTextLineY + 8);
+  gfx.print("Config Mode");
+  currentTextLineY += textLineSpacing * 2;
+
   display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("Config Mode");
+  display.println("1. Scan QR code");
   currentTextLineY += textLineSpacing;
 
   display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("WiFi:");
+  display.println("2. Connect to WiFi");
   currentTextLineY += textLineSpacing;
 
   display.setCursor(textLeftMargin, currentTextLineY);
-  display.println(accessPointName);
+  display.println("3. Configure");
   currentTextLineY += textLineSpacing;
 
   display.setCursor(textLeftMargin, currentTextLineY);
-  display.print("Pass: ");
-  display.println(accessPointPassword);
-  currentTextLineY += textLineSpacing + 5;
-
-  display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("Scan QR:");
+  display.println("4. Save & Exit");
 
   String wifiQRCodeString = generateWiFiQRString();
 
@@ -117,5 +111,4 @@ void ConfigurationScreen::render() {
   display.hibernate();
 
   Serial.println("Configuration screen with enhanced QR code displayed");
-  Serial.println("QR code optimized for iPhone scanning");
 }
