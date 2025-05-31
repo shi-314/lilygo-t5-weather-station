@@ -29,10 +29,6 @@ const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microsec
 
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
-WifiErrorScreen errorScreen(display);
-MessageScreen messageScreen(display);
-ChatGPTClient chatGPTClient;
-AIWeatherPrompt weatherPrompt;
 ConfigurationServer configurationServer;
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
@@ -40,12 +36,10 @@ enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, S
 RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
 
 void goToSleep(uint64_t sleepTime);
-void checkWakeupReason();
 void displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
 void updateWiFiCredentials(const String& newSSID, const String& newPassword);
-bool hasValidWiFiCredentials();
 
 bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
 
@@ -97,10 +91,13 @@ void displayCurrentScreen() {
     case MESSAGE_SCREEN: {
       Serial.println("Displaying message screen");
       weather.update();
+      AIWeatherPrompt weatherPrompt;
+      ChatGPTClient chatGPTClient;
       String prompt = weatherPrompt.generatePrompt(weather);
       String chatGPTResponse = chatGPTClient.generateContent(prompt);
       Serial.println("ChatGPT Response: " + chatGPTResponse);
 
+      MessageScreen messageScreen(display);
       messageScreen.setMessageText(chatGPTResponse);
       messageScreen.render();
       break;
@@ -167,6 +164,7 @@ void setup() {
     wifi.connect();
     if (!wifi.isConnected()) {
       Serial.println("Failed to connect to WiFi");
+      WifiErrorScreen errorScreen(display);
       errorScreen.render();
       goToSleep(deepSleepMicros);
       return;
