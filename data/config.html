@@ -274,9 +274,8 @@
 
             <div class="form-group">
                 <label for="openaiApiKey">OpenAI API Key <span class="optional-label">(optional)</span></label>
-                <input type="text" id="openaiApiKey" name="openaiApiKey"
-                    placeholder="sk-proj-... (for AI weather messages)" value="{{CURRENT_OPENAI_KEY}}"
-                    autocomplete="off" autocapitalize="none" autocorrect="off">
+                <input type="text" id="openaiApiKey" name="openaiApiKey" placeholder="(for AI weather forecast)"
+                    value="{{CURRENT_OPENAI_KEY}}" autocomplete="off" autocapitalize="none" autocorrect="off">
             </div>
 
             <button type="submit" class="btn" id="submitBtn">Save Configuration</button>
@@ -341,11 +340,17 @@
             const heightDifference = initialViewportHeight - currentHeight;
 
             if (heightDifference > 150) {
-                // Virtual keyboard is likely open
-                document.body.style.height = currentHeight + 'px';
-            } else {
-                // Virtual keyboard is closed
+                // Virtual keyboard is likely open - adjust container position instead of body height
+                document.body.style.minHeight = currentHeight + 'px';
                 document.body.style.height = 'auto';
+                document.body.style.alignItems = 'flex-start';
+                document.body.style.paddingTop = '10px';
+            } else {
+                // Virtual keyboard is closed - restore original styles
+                document.body.style.minHeight = '100vh';
+                document.body.style.height = 'auto';
+                document.body.style.alignItems = 'center';
+                document.body.style.paddingTop = '20px';
             }
         }
 
