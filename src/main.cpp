@@ -39,7 +39,7 @@ enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, S
 
 RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
 
-void goToSleep();
+void goToSleep(uint64_t sleepTime);
 void checkWakeupReason();
 void displayCurrentScreen();
 void cycleToNextScreen();
@@ -202,13 +202,18 @@ void setup() {
     if (!wifi.isConnected()) {
       Serial.println("Failed to connect to WiFi");
       errorScreen.render();
-      goToSleep();
+      goToSleep(deepSleepMicros);
       return;
     }
   }
 
   displayCurrentScreen();
-  goToSleep(deepSleepMicros);
+
+  if (currentScreenIndex == CONFIG_SCREEN) {
+    goToSleep(1000000);  // 1 second
+  } else {
+    goToSleep(deepSleepMicros);
+  }
 }
 
 void loop() {}
