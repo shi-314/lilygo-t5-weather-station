@@ -12,11 +12,14 @@ public:
     void run();
     void stop();
     void handleRequests();
+    
+    String getWifiAccessPointName() const;
+    String getWifiAccessPointPassword() const;
 
 private:
     String deviceName;
-    String wifiNetworkName;
-    String wifiPassword;
+    String wifiAccessPointName;
+    String wifiAccessPointPassword;
     
     AsyncWebServer* server;
     DNSServer* dnsServer;

@@ -7,6 +7,7 @@
 #include "Weather.h"
 #include "MeteogramWeatherScreen.h"
 #include "WifiErrorScreen.h"
+#include "ConfigurationScreen.h"
 #include "MessageScreen.h"
 #include "ChatGPTClient.h"
 #include "AIWeatherPrompt.h"
@@ -90,22 +91,8 @@ void displayCurrentScreen() {
 void runConfigurationMode() {
     Serial.println("Entering configuration mode...");
     
-    // Show configuration message on display
-    display.init(115200);
-    display.setRotation(1);
-    display.fillScreen(GxEPD_WHITE);
-    display.setTextColor(GxEPD_BLACK);
-    display.setFont();
-    display.setCursor(10, 30);
-    display.println("Configuration Mode");
-    display.setCursor(10, 50);
-    display.println("Connect to WiFi:");
-    display.setCursor(10, 70);
-    display.println("WeatherStation-Config");
-    display.setCursor(10, 90);
-    display.println("Password: configure123");
-    display.displayWindow(0, 0, display.width(), display.height());
-    display.hibernate();
+    ConfigurationScreen configurationScreen(display, configurationServer.getWifiAccessPointName(), configurationServer.getWifiAccessPointPassword());
+    configurationScreen.render();
     
     configurationServer.run();
     

@@ -5,8 +5,8 @@
 
 ConfigurationServer::ConfigurationServer() 
     : deviceName("LilyGo-Weather-Station"),
-      wifiNetworkName("WeatherStation-Config"),
-      wifiPassword("configure123"),
+      wifiAccessPointName("WeatherStation-Config"),
+      wifiAccessPointPassword("configure123"),
       server(nullptr),
       dnsServer(nullptr),
       isRunning(false) {
@@ -22,18 +22,18 @@ void ConfigurationServer::run() {
     delay(1000);
     
     Serial.print("Setting up WiFi Access Point: ");
-    Serial.println(wifiNetworkName);
+    Serial.println(wifiAccessPointName);
     
     // Configure AP settings
     WiFi.mode(WIFI_AP);
-    bool apStarted = WiFi.softAP(wifiNetworkName.c_str(), wifiPassword.c_str());
+    bool apStarted = WiFi.softAP(wifiAccessPointName.c_str(), wifiAccessPointPassword.c_str());
     
     if (apStarted) {
         Serial.println("Access Point started successfully!");
         Serial.print("Network Name (SSID): ");
-        Serial.println(wifiNetworkName);
+        Serial.println(wifiAccessPointName);
         Serial.print("Password: ");
-        Serial.println(wifiPassword);
+        Serial.println(wifiAccessPointPassword);
         Serial.print("Access Point IP: ");
         Serial.println(WiFi.softAPIP());
         Serial.println("Setting up captive portal...");
@@ -219,7 +219,7 @@ String ConfigurationServer::getConfigurationPage() {
         
         <div class="device-info">
             <strong>Device:</strong> )" + deviceName + R"(<br>
-            <strong>Network:</strong> )" + wifiNetworkName + R"(
+            <strong>Network:</strong> )" + wifiAccessPointName + R"(
         </div>
         
         <div class="info">
@@ -245,4 +245,12 @@ String ConfigurationServer::getConfigurationPage() {
     )";
     
     return html;
+}
+
+String ConfigurationServer::getWifiAccessPointName() const {
+    return wifiAccessPointName;
+}
+
+String ConfigurationServer::getWifiAccessPointPassword() const {
+    return wifiAccessPointPassword;
 } 
