@@ -35,10 +35,9 @@ ChatGPTClient chatGPTClient;
 AIWeatherPrompt weatherPrompt;
 ConfigurationServer configurationServer;
 
-enum ScreenType { METEOGRAM_SCREEN = 0, MESSAGE_SCREEN = 1, SCREEN_COUNT = 2 };
+enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
 
 RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
-RTC_DATA_ATTR bool enterConfigMode = false;
 
 void goToSleep();
 void checkWakeupReason();
@@ -47,6 +46,9 @@ void cycleToNextScreen();
 bool isButtonWakeup();
 void runConfigurationMode();
 void updateWiFiCredentials(const String& newSSID, const String& newPassword);
+bool hasValidWiFiCredentials();
+
+bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
 
 bool isButtonWakeup() {
   esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
@@ -60,6 +62,34 @@ void cycleToNextScreen() {
 
 void displayCurrentScreen() {
   switch (currentScreenIndex) {
+    case CONFIG_SCREEN: {
+      Serial.println("Displaying configuration screen");
+      ConfigurationScreen configurationScreen(display, configurationServer.getWifiAccessPointName(),
+                                              configurationServer.getWifiAccessPointPassword());
+      configurationScreen.render();
+
+      configurationServer.run([](const String& ssid, const String& password) {
+        updateWiFiCredentials(ssid, password);
+        configurationServer.stop();
+      });
+
+      while (configurationServer.isRunning()) {
+        configurationServer.handleRequests();
+
+        if (digitalRead(BUTTON_1) == LOW) {
+          delay(50);
+          if (digitalRead(BUTTON_1) == LOW) {
+            Serial.println("Button pressed - exiting configuration mode");
+            break;
+          }
+        }
+
+        delay(10);
+      }
+
+      configurationServer.stop();
+      break;
+    }
     case METEOGRAM_SCREEN:
       Serial.println("Displaying meteogram screen");
       weather.update();
@@ -135,7 +165,7 @@ void runConfigurationMode() {
 
   configurationServer.stop();
   Serial.println("Configuration mode ended");
-  ESP.restart();
+  //   ESP.restart();
 }
 
 void goToSleep() {
@@ -154,39 +184,26 @@ void setup() {
   pinMode(BUTTON_1, INPUT_PULLUP);
   SPI.begin(18, 19, 23);
 
-  if (enterConfigMode) {
-    enterConfigMode = false;
-    runConfigurationMode();
-    return;
-  }
-
-  WiFiConnection wifi(wifiSSID, wifiPassword);
-  wifi.connect();
-  if (!wifi.isConnected()) {
-    Serial.println("Failed to connect to WiFi");
-    errorScreen.render();
-    goToSleep();
-    return;
+  if (!isButtonWakeup()) {
+    if (!hasValidWiFiCredentials()) {
+      currentScreenIndex = CONFIG_SCREEN;
+    } else {
+      currentScreenIndex = METEOGRAM_SCREEN;
+    }
   }
 
   if (isButtonWakeup()) {
-    unsigned long buttonPressStart = millis();
-    bool buttonHeld = true;
+    cycleToNextScreen();
+  }
 
-    while (millis() - buttonPressStart < 3000) {
-      if (digitalRead(BUTTON_1) == HIGH) {
-        buttonHeld = false;
-        break;
-      }
-      delay(10);
-    }
-
-    if (buttonHeld) {
-      Serial.println("Button held for 3 seconds - entering configuration mode");
-      runConfigurationMode();
+  if (currentScreenIndex != CONFIG_SCREEN) {
+    WiFiConnection wifi(wifiSSID, wifiPassword);
+    wifi.connect();
+    if (!wifi.isConnected()) {
+      Serial.println("Failed to connect to WiFi");
+      errorScreen.render();
+      goToSleep();
       return;
-    } else {
-      cycleToNextScreen();
     }
   }
 
