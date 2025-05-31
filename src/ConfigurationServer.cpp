@@ -1,34 +1,34 @@
 #include "ConfigurationServer.h"
 #include <WiFi.h>
 #include <WiFiAP.h>
-#include <SPIFFS.h>
 
-ConfigurationServer::ConfigurationServer() 
+ConfigurationServer::ConfigurationServer()
     : deviceName("LilyGo-Weather-Station"),
       wifiAccessPointName("WeatherStation-Config"),
       wifiAccessPointPassword("configure123"),
       server(nullptr),
       dnsServer(nullptr),
-      isRunning(false) {
+      isRunning(false)
+{
 }
 
-void ConfigurationServer::run() {
+void ConfigurationServer::run()
+{
     Serial.println("Starting Configuration Server...");
     Serial.print("Device Name: ");
     Serial.println(deviceName);
-    
-    // Stop any existing WiFi connection
+
     WiFi.disconnect(true);
     delay(1000);
-    
+
     Serial.print("Setting up WiFi Access Point: ");
     Serial.println(wifiAccessPointName);
-    
-    // Configure AP settings
+
     WiFi.mode(WIFI_AP);
     bool apStarted = WiFi.softAP(wifiAccessPointName.c_str(), wifiAccessPointPassword.c_str());
-    
-    if (apStarted) {
+
+    if (apStarted)
+    {
         Serial.println("Access Point started successfully!");
         Serial.print("Network Name (SSID): ");
         Serial.println(wifiAccessPointName);
@@ -37,26 +37,31 @@ void ConfigurationServer::run() {
         Serial.print("Access Point IP: ");
         Serial.println(WiFi.softAPIP());
         Serial.println("Setting up captive portal...");
-        
-        // Setup captive portal
+
         setupDNSServer();
         setupWebServer();
-        
+
         isRunning = true;
         Serial.println("Captive portal is running!");
         Serial.println("Devices connecting to this network will be automatically redirected to the configuration page");
-    } else {
+    }
+    else
+    {
         Serial.println("Failed to start Access Point!");
     }
 }
 
-void ConfigurationServer::stop() {
-    if (isRunning) {
-        if (server) {
+void ConfigurationServer::stop()
+{
+    if (isRunning)
+    {
+        if (server)
+        {
             delete server;
             server = nullptr;
         }
-        if (dnsServer) {
+        if (dnsServer)
+        {
             dnsServer->stop();
             delete dnsServer;
             dnsServer = nullptr;
@@ -67,77 +72,87 @@ void ConfigurationServer::stop() {
     }
 }
 
-void ConfigurationServer::handleRequests() {
-    if (isRunning && dnsServer) {
+void ConfigurationServer::handleRequests()
+{
+    if (isRunning && dnsServer)
+    {
         dnsServer->processNextRequest();
     }
 }
 
-void ConfigurationServer::setupDNSServer() {
+void ConfigurationServer::setupDNSServer()
+{
     dnsServer = new DNSServer();
     const byte DNS_PORT = 53;
     dnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
     Serial.println("DNS Server started - all domains redirect to captive portal");
 }
 
-void ConfigurationServer::setupWebServer() {
+void ConfigurationServer::setupWebServer()
+{
     server = new AsyncWebServer(80);
-    
-    // Captive portal detection for various operating systems
-    server->on("/generate_204", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); }); // Android
-    server->on("/fwlink", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); }); // Microsoft
-    server->on("/hotspot-detect.html", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); }); // iOS
-    server->on("/connectivity-check.html", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); }); // Firefox
-    
-    // Main configuration page
-    server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });
-    server->on("/config", HTTP_GET, [this](AsyncWebServerRequest *request) { handleRoot(request); });
-    server->on("/save", HTTP_POST, [this](AsyncWebServerRequest *request) { handleSave(request); });
-    
-    // Catch all other requests
-    server->onNotFound([this](AsyncWebServerRequest *request) { handleNotFound(request); });
-    
+
+    server->on("/generate_204", HTTP_GET, [this](AsyncWebServerRequest *request)
+               { handleRoot(request); }); // Android
+    server->on("/fwlink", HTTP_GET, [this](AsyncWebServerRequest *request)
+               { handleRoot(request); }); // Microsoft
+    server->on("/hotspot-detect.html", HTTP_GET, [this](AsyncWebServerRequest *request)
+               { handleRoot(request); }); // iOS
+    server->on("/connectivity-check.html", HTTP_GET, [this](AsyncWebServerRequest *request)
+               { handleRoot(request); }); // Firefox
+
+    server->on("/", HTTP_GET, [this](AsyncWebServerRequest *request)
+               { handleRoot(request); });
+    server->on("/config", HTTP_GET, [this](AsyncWebServerRequest *request)
+               { handleRoot(request); });
+    server->on("/save", HTTP_POST, [this](AsyncWebServerRequest *request)
+               { handleSave(request); });
+
+    server->onNotFound([this](AsyncWebServerRequest *request)
+                       { handleNotFound(request); });
+
     server->begin();
     Serial.println("Web server started on port 80");
 }
 
-void ConfigurationServer::handleRoot(AsyncWebServerRequest *request) {
+void ConfigurationServer::handleRoot(AsyncWebServerRequest *request)
+{
     String html = getConfigurationPage();
     request->send(200, "text/html", html);
 }
 
-void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
+void ConfigurationServer::handleSave(AsyncWebServerRequest *request)
+{
     String response = "<html><body><h2>Configuration Saved!</h2>";
     response += "<p>Settings have been saved. The device will restart in 3 seconds.</p>";
     response += "<script>setTimeout(function(){ window.close(); }, 3000);</script>";
     response += "</body></html>";
-    
-    if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
+
+    if (request->hasParam("ssid", true) && request->hasParam("password", true))
+    {
         String ssid = request->getParam("ssid", true)->value();
         String password = request->getParam("password", true)->value();
-        
+
         Serial.println("WiFi Configuration received:");
         Serial.print("SSID: ");
         Serial.println(ssid);
         Serial.print("Password: ");
         Serial.println("***");
-        
-        // Here you would typically save the configuration to EEPROM or SPIFFS
-        // and restart the device to connect to the new WiFi network
-        
+
         response += "<p>SSID: " + ssid + "</p>";
         response += "<p>The device will now connect to your WiFi network.</p>";
     }
-    
+
     request->send(200, "text/html", response);
 }
 
-void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request) {
-    // Redirect all unknown requests to the main configuration page
+void ConfigurationServer::handleNotFound(AsyncWebServerRequest *request)
+{
     request->redirect("/");
 }
 
-String ConfigurationServer::getConfigurationPage() {
+String ConfigurationServer::getConfigurationPage()
+{
     String html = R"(
 <!DOCTYPE html>
 <html>
@@ -218,8 +233,10 @@ String ConfigurationServer::getConfigurationPage() {
         <h1>🌤️ Weather Station Setup</h1>
         
         <div class="device-info">
-            <strong>Device:</strong> )" + deviceName + R"(<br>
-            <strong>Network:</strong> )" + wifiAccessPointName + R"(
+            <strong>Device:</strong> )" +
+                  deviceName + R"(<br>
+            <strong>Network:</strong> )" +
+                  wifiAccessPointName + R"(
         </div>
         
         <div class="info">
@@ -243,14 +260,16 @@ String ConfigurationServer::getConfigurationPage() {
 </body>
 </html>
     )";
-    
+
     return html;
 }
 
-String ConfigurationServer::getWifiAccessPointName() const {
+String ConfigurationServer::getWifiAccessPointName() const
+{
     return wifiAccessPointName;
 }
 
-String ConfigurationServer::getWifiAccessPointPassword() const {
+String ConfigurationServer::getWifiAccessPointPassword() const
+{
     return wifiAccessPointPassword;
-} 
+}
