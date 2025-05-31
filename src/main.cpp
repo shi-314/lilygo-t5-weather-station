@@ -15,8 +15,8 @@
 #include "battery.h"
 #include "boards.h"
 
-const char *ssid = ":(";
-const char *password = "20009742591595504581";
+RTC_DATA_ATTR char wifiSSID[64] = ":(";
+RTC_DATA_ATTR char wifiPassword[64] = "20009742591595504581";
 
 // Berlin
 const float latitude = 52.520008;
@@ -25,10 +25,9 @@ const float longitude = 13.404954;
 GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
     GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
-const unsigned long sleepTime = 900000000;       // Deep sleep time in microseconds (15 minutes)
-const unsigned long configModeTimeout = 300000;  // 5 minutes in config mode before restart
+const unsigned long sleepTime = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
-WiFiConnection wifi(ssid, password);
+WiFiConnection wifi(wifiSSID, wifiPassword);
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
 WifiErrorScreen errorScreen(display);
@@ -48,6 +47,7 @@ void displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
 void runConfigurationMode();
+void updateWiFiCredentials(const String& newSSID, const String& newPassword);
 
 bool isButtonWakeup() {
   esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
@@ -86,6 +86,29 @@ void displayCurrentScreen() {
   }
 }
 
+void updateWiFiCredentials(const String& newSSID, const String& newPassword) {
+  if (newSSID.length() >= sizeof(wifiSSID)) {
+    Serial.println("Error: SSID too long, maximum length is " + String(sizeof(wifiSSID) - 1));
+    return;
+  }
+
+  if (newPassword.length() >= sizeof(wifiPassword)) {
+    Serial.println("Error: Password too long, maximum length is " + String(sizeof(wifiPassword) - 1));
+    return;
+  }
+
+  memset(wifiSSID, 0, sizeof(wifiSSID));
+  memset(wifiPassword, 0, sizeof(wifiPassword));
+
+  strncpy(wifiSSID, newSSID.c_str(), sizeof(wifiSSID) - 1);
+  wifiSSID[sizeof(wifiSSID) - 1] = '\0';
+
+  strncpy(wifiPassword, newPassword.c_str(), sizeof(wifiPassword) - 1);
+  wifiPassword[sizeof(wifiPassword) - 1] = '\0';
+
+  Serial.println("WiFi credentials updated in RTC memory");
+}
+
 void runConfigurationMode() {
   Serial.println("Entering configuration mode...");
 
@@ -93,13 +116,20 @@ void runConfigurationMode() {
                                           configurationServer.getWifiAccessPointPassword());
   configurationScreen.render();
 
-  configurationServer.run();
+  configurationServer.run([](const String& ssid, const String& password) {
+    Serial.println("Configuration received via callback:");
+    Serial.print("SSID: ");
+    Serial.println(ssid);
+    Serial.print("Password: ");
+    Serial.println("***");
+
+    updateWiFiCredentials(ssid, password);
+    configurationServer.stop();
+  });
 
   unsigned long configStartTime = millis();
 
-  // Keep the configuration server running until timeout or configuration
-  // complete
-  while (millis() - configStartTime < configModeTimeout) {
+  while (configurationServer.isRunning()) {
     configurationServer.handleRequests();
 
     // Check if button is pressed to exit config mode

@@ -10,9 +10,11 @@ ConfigurationServer::ConfigurationServer()
       wifiAccessPointPassword("configure123"),
       server(nullptr),
       dnsServer(nullptr),
-      isRunning(false) {}
+      isServerRunning(false) {}
 
-void ConfigurationServer::run() {
+void ConfigurationServer::run(OnSaveCallback onSaveCallback) {
+  this->onSaveCallback = onSaveCallback;
+
   Serial.println("Starting Configuration Server...");
   Serial.print("Device Name: ");
   Serial.println(deviceName);
@@ -53,7 +55,7 @@ void ConfigurationServer::run() {
     setupDNSServer();
     setupWebServer();
 
-    isRunning = true;
+    isServerRunning = true;
     Serial.println("Captive portal is running!");
     Serial.println("Devices connecting to this network will be automatically redirected to the configuration page");
   } else {
@@ -62,7 +64,7 @@ void ConfigurationServer::run() {
 }
 
 void ConfigurationServer::stop() {
-  if (isRunning) {
+  if (isServerRunning) {
     if (server) {
       delete server;
       server = nullptr;
@@ -73,13 +75,13 @@ void ConfigurationServer::stop() {
       dnsServer = nullptr;
     }
     WiFi.softAPdisconnect(true);
-    isRunning = false;
+    isServerRunning = false;
     Serial.println("Configuration server stopped");
   }
 }
 
 void ConfigurationServer::handleRequests() {
-  if (isRunning && dnsServer) {
+  if (isServerRunning && dnsServer) {
     dnsServer->processNextRequest();
   }
 }
@@ -133,6 +135,8 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
 
     response += "<p>SSID: " + ssid + "</p>";
     response += "<p>The device will now connect to your WiFi network.</p>";
+
+    onSaveCallback(ssid, password);
   }
 
   request->send(200, "text/html", response);
@@ -168,3 +172,5 @@ String ConfigurationServer::getConfigurationPage() {
 String ConfigurationServer::getWifiAccessPointName() const { return wifiAccessPointName; }
 
 String ConfigurationServer::getWifiAccessPointPassword() const { return wifiAccessPointPassword; }
+
+bool ConfigurationServer::isRunning() const { return isServerRunning; }

@@ -7,11 +7,16 @@
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 
+#include <functional>
+
+using OnSaveCallback = std::function<void(const String &ssid, const String &password)>;
+
 class ConfigurationServer {
  public:
   ConfigurationServer();
-  void run();
+  void run(OnSaveCallback onSaveCallback);
   void stop();
+  bool isRunning() const;
   void handleRequests();
 
   String getWifiAccessPointName() const;
@@ -24,9 +29,10 @@ class ConfigurationServer {
 
   AsyncWebServer *server;
   DNSServer *dnsServer;
-  bool isRunning;
+  bool isServerRunning;
 
   String htmlTemplate;
+  OnSaveCallback onSaveCallback;
 
   void setupWebServer();
   void setupDNSServer();
