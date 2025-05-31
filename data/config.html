@@ -3,116 +3,153 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Weather Station Configuration</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Courier New', Courier, monospace;
-            max-width: 400px;
-            margin: 10px auto;
-            padding: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 100%;
+            margin: 0;
+            padding: 15px;
             background-color: #e0e0e0;
             color: #000000;
-            line-height: 1.2;
+            line-height: 1.4;
+            font-size: 16px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .container {
             background: #f0f0f0;
-            padding: 15px;
+            padding: 20px;
             border: 2px solid #000000;
             margin: 0;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
         }
 
         h1 {
             color: #000000;
             text-align: center;
-            margin: 0 0 15px 0;
-            font-size: 16px;
+            margin: 0 0 20px 0;
+            font-size: 20px;
             font-weight: bold;
-            border-bottom: 1px solid #000000;
-            padding-bottom: 5px;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 10px;
+            letter-spacing: 1px;
         }
 
         .form-group {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 3px;
+            margin-bottom: 8px;
             font-weight: bold;
             color: #000000;
-            font-size: 12px;
+            font-size: 14px;
+            letter-spacing: 0.5px;
         }
 
         input[type="text"],
         input[type="password"] {
             width: 100%;
-            padding: 5px;
-            border: 1px solid #000000;
-            border-radius: 0;
-            font-size: 12px;
-            font-family: 'Courier New', Courier, monospace;
-            box-sizing: border-box;
+            padding: 15px 12px;
+            border: 2px solid #000000;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #ffffff;
             color: #000000;
+            min-height: 48px;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: border-color 0.2s ease;
         }
 
         input[type="text"]:focus,
         input[type="password"]:focus {
-            border: 2px solid #000000;
+            border-color: #0066cc;
             outline: none;
             background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
         }
 
         .btn {
             background-color: #000000;
             color: #ffffff;
-            padding: 8px 15px;
-            border: 1px solid #000000;
-            border-radius: 0;
+            padding: 16px 20px;
+            border: 2px solid #000000;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
-            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             font-weight: bold;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px;
+            min-height: 48px;
+            transition: all 0.2s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .btn:hover {
+        .btn:active {
             background-color: #333333;
+            transform: translateY(1px);
         }
 
         .btn:disabled {
             background-color: #666666;
             cursor: not-allowed;
+            transform: none;
         }
 
         .info {
             background-color: #d0d0d0;
-            border: 1px solid #000000;
-            padding: 8px;
-            margin-bottom: 15px;
-            font-size: 11px;
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-radius: 6px;
+            text-align: center;
+            line-height: 1.5;
         }
 
         .device-info {
             text-align: center;
             color: #000000;
-            margin-bottom: 15px;
-            font-size: 11px;
-            border: 1px solid #000000;
-            padding: 5px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border: 2px solid #000000;
+            padding: 12px;
             background-color: #d0d0d0;
+            border-radius: 6px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
         }
 
         .status {
-            padding: 10px;
-            border: 1px solid #000000;
-            margin: 10px 0;
-            font-size: 11px;
+            padding: 15px;
+            border: 2px solid #000000;
+            margin: 15px 0;
+            font-size: 14px;
             text-align: center;
             display: none;
+            border-radius: 6px;
+            font-weight: bold;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .status.success {
@@ -131,6 +168,75 @@
             background-color: #fff3cd;
             color: #856404;
             border-color: #ffc107;
+        }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                font-size: 16px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 18px;
+            }
+
+            input[type="text"],
+            input[type="password"] {
+                padding: 14px 10px;
+                font-size: 16px;
+                min-height: 50px;
+            }
+
+            .btn {
+                padding: 18px 20px;
+                font-size: 16px;
+                min-height: 52px;
+            }
+        }
+
+        /* Landscape orientation adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                align-items: flex-start;
+                padding-top: 10px;
+            }
+
+            .container {
+                margin-top: 0;
+            }
+
+            h1 {
+                margin-bottom: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+        }
+
+        /* High DPI displays */
+        @media (-webkit-min-device-pixel-ratio: 2),
+        (min-resolution: 192dpi) {
+
+            input[type="text"],
+            input[type="password"] {
+                border-width: 1px;
+            }
+
+            input[type="text"]:focus,
+            input[type="password"]:focus {
+                border-width: 2px;
+            }
         }
     </style>
 </head>
@@ -154,13 +260,13 @@
             <div class="form-group">
                 <label for="ssid">WIFI NETWORK (SSID):</label>
                 <input type="text" id="ssid" name="ssid" required placeholder="Enter network name"
-                    value="{{CURRENT_SSID}}">
+                    value="{{CURRENT_SSID}}" autocomplete="off" autocapitalize="none" autocorrect="off">
             </div>
 
             <div class="form-group">
                 <label for="password">WIFI PASSWORD:</label>
                 <input type="text" id="password" name="password" required placeholder="Enter password"
-                    value="{{CURRENT_PASSWORD}}">
+                    value="{{CURRENT_PASSWORD}}" autocomplete="off" autocapitalize="none" autocorrect="off">
             </div>
 
             <button type="submit" class="btn" id="submitBtn">SAVE CONFIG</button>
@@ -168,6 +274,9 @@
     </div>
 
     <script>
+        // Prevent zoom on iOS when focusing inputs
+        document.addEventListener('touchstart', function () { }, { passive: true });
+
         document.getElementById('configForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
@@ -180,7 +289,7 @@
             submitBtn.textContent = 'SAVING...';
             statusDiv.className = 'status loading';
             statusDiv.textContent = 'Saving configuration...';
-            statusDiv.style.display = 'block';
+            statusDiv.style.display = 'flex';
 
             try {
                 const formData = new FormData();
@@ -214,6 +323,30 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'SAVE CONFIG';
             }
+        });
+
+        // Handle virtual keyboard on mobile
+        let initialViewportHeight = window.innerHeight;
+
+        function handleViewportChange() {
+            const currentHeight = window.innerHeight;
+            const heightDifference = initialViewportHeight - currentHeight;
+
+            if (heightDifference > 150) {
+                // Virtual keyboard is likely open
+                document.body.style.height = currentHeight + 'px';
+            } else {
+                // Virtual keyboard is closed
+                document.body.style.height = 'auto';
+            }
+        }
+
+        window.addEventListener('resize', handleViewportChange);
+        window.addEventListener('orientationchange', function () {
+            setTimeout(() => {
+                initialViewportHeight = window.innerHeight;
+                handleViewportChange();
+            }, 500);
         });
     </script>
 </body>
