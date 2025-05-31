@@ -160,8 +160,6 @@ bool ConfigurationServer::loadHtmlTemplate() {
 
 String ConfigurationServer::getConfigurationPage() {
   String html = htmlTemplate;
-  html.replace("{{DEVICE_NAME}}", deviceName);
-  html.replace("{{AP_NAME}}", wifiAccessPointName);
   html.replace("{{CURRENT_SSID}}", String(currentWifiSSID));
   html.replace("{{CURRENT_PASSWORD}}", String(currentWifiPassword));
   return html;
