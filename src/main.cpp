@@ -6,6 +6,7 @@
 #include "ChatGPTClient.h"
 #include "ConfigurationScreen.h"
 #include "ConfigurationServer.h"
+#include "CurrentWeatherScreen.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
 #include "OpenMeteoAPI.h"
@@ -45,9 +46,15 @@ OpenMeteoAPI openMeteoAPI;
 ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle, city,
                                                       countryCode));
 
-enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
+enum ScreenType {
+  CONFIG_SCREEN = 0,
+  CURRENT_WEATHER_SCREEN = 1,
+  METEOGRAM_SCREEN = 2,
+  MESSAGE_SCREEN = 3,
+  SCREEN_COUNT = 4
+};
 
-RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
+RTC_DATA_ATTR int currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
 void goToSleep(uint64_t sleepTime);
 void displayCurrentScreen();
@@ -128,6 +135,12 @@ void displayCurrentScreen() {
       configurationServer.stop();
       break;
     }
+    case CURRENT_WEATHER_SCREEN: {
+      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(city), String(countryCode));
+      currentWeatherScreen.render();
+      break;
+    }
     case METEOGRAM_SCREEN: {
       WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
@@ -150,12 +163,12 @@ void displayCurrentScreen() {
       break;
     }
     default: {
-      Serial.println("Unknown screen index, defaulting to meteogram");
-      currentScreenIndex = METEOGRAM_SCREEN;
+      Serial.println("Unknown screen index, defaulting to current weather");
+      currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
       WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
-      MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
-      meteogramWeatherScreen.render();
+      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(city), String(countryCode));
+      currentWeatherScreen.render();
       break;
     }
   }
@@ -242,7 +255,7 @@ void setup() {
     if (!hasValidWiFiCredentials()) {
       currentScreenIndex = CONFIG_SCREEN;
     } else {
-      currentScreenIndex = METEOGRAM_SCREEN;
+      currentScreenIndex = CURRENT_WEATHER_SCREEN;
     }
   }
 
