@@ -18,6 +18,13 @@ RTC_DATA_ATTR char wifiSSID[64] = "";
 RTC_DATA_ATTR char wifiPassword[64] = "";
 RTC_DATA_ATTR char openaiApiKey[200] = "";
 RTC_DATA_ATTR char aiPromptStyle[200] = "neutral";
+RTC_DATA_ATTR char city[100] = "Berlin";
+RTC_DATA_ATTR char countryCode[3] = "DE";
+RTC_DATA_ATTR float latitude = NAN;
+RTC_DATA_ATTR float longitude = NAN;
+
+const float fallbackLatitude = 52.520008;
+const float fallbackLongitude = 13.404954;
 
 const String aiWeatherPrompt =
     "I will share a JSON payload with you from the Open Meteo API which has weather forecast data for the current "
@@ -29,17 +36,14 @@ const String aiWeatherPrompt =
     "- don't mention the location\n"
     "- only include the current weather and the forecast for the remaining day, not the past\n";
 
-// Berlin
-const float latitude = 52.520008;
-const float longitude = 13.404954;
-
 GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
     GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
 OpenMeteoAPI openMeteoAPI;
-ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle));
+ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle, city,
+                                                      countryCode));
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
 
@@ -55,6 +59,28 @@ bool hasValidOpenaiApiKey();
 bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
 
 bool hasValidOpenaiApiKey() { return strlen(openaiApiKey) > 0; }
+
+void geocodeCurrentLocation() {
+  if (strlen(city) == 0) {
+    Serial.println("No city configured, using default coordinates");
+    latitude = fallbackLatitude;
+    longitude = fallbackLongitude;
+    return;
+  }
+
+  Serial.printf("Geocoding location: %s (%s)\n", city, strlen(countryCode) > 0 ? countryCode : "");
+
+  GeocodingResult location = openMeteoAPI.getLocationByCity(String(city), String(countryCode));
+  if (location.name.length() > 0) {
+    latitude = location.latitude;
+    longitude = location.longitude;
+    Serial.printf("Geocoded successfully: %s -> (%f, %f)\n", city, latitude, longitude);
+  } else {
+    Serial.printf("Geocoding failed for %s, using default coordinates\n", city);
+    latitude = fallbackLatitude;
+    longitude = fallbackLongitude;
+  }
+}
 
 bool isButtonWakeup() {
   esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
@@ -122,6 +148,7 @@ void displayCurrentScreen() {
     default: {
       Serial.println("Unknown screen index, defaulting to meteogram");
       currentScreenIndex = METEOGRAM_SCREEN;
+
       WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
@@ -151,20 +178,44 @@ void updateConfiguration(const Configuration& config) {
     return;
   }
 
+  if (config.city.length() >= sizeof(city)) {
+    Serial.println("Error: City too long, maximum length is " + String(sizeof(city) - 1));
+    return;
+  }
+
+  if (config.countryCode.length() >= sizeof(countryCode)) {
+    Serial.println("Error: Country code too long, maximum length is " + String(sizeof(countryCode) - 1));
+    return;
+  }
+
+  bool locationChanged = (config.city != String(city)) || (config.countryCode != String(countryCode));
+
   memset(wifiSSID, 0, sizeof(wifiSSID));
   memset(wifiPassword, 0, sizeof(wifiPassword));
   memset(openaiApiKey, 0, sizeof(openaiApiKey));
   memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
+  memset(city, 0, sizeof(city));
+  memset(countryCode, 0, sizeof(countryCode));
 
   strncpy(wifiSSID, config.ssid.c_str(), sizeof(wifiSSID) - 1);
   strncpy(wifiPassword, config.password.c_str(), sizeof(wifiPassword) - 1);
   strncpy(openaiApiKey, config.openaiApiKey.c_str(), sizeof(openaiApiKey) - 1);
   strncpy(aiPromptStyle, config.aiPromptStyle.c_str(), sizeof(aiPromptStyle) - 1);
+  strncpy(city, config.city.c_str(), sizeof(city) - 1);
+  strncpy(countryCode, config.countryCode.c_str(), sizeof(countryCode) - 1);
+
+  if (locationChanged) {
+    latitude = NAN;
+    longitude = NAN;
+    Serial.println("Location changed - coordinates will be re-geocoded on next startup");
+  }
 
   Serial.println("Configuration updated in RTC memory");
   Serial.println("WiFi SSID: " + String(wifiSSID));
   Serial.println("OpenAI API Key: " + String(hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]"));
   Serial.println("AI Prompt Style: " + String(strlen(aiPromptStyle) > 0 ? aiPromptStyle : "[NOT SET]"));
+  Serial.println("City: " + String(strlen(city) > 0 ? city : "[NOT SET]"));
+  Serial.println("Country Code: " + String(strlen(countryCode) > 0 ? countryCode : "[NOT SET]"));
 }
 
 void goToSleep(uint64_t sleepTime) {
@@ -204,6 +255,10 @@ void setup() {
       errorScreen.render();
       goToSleep(deepSleepMicros);
       return;
+    }
+
+    if (isnan(latitude) || isnan(longitude)) {
+      geocodeCurrentLocation();
     }
   }
 

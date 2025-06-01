@@ -14,11 +14,19 @@ struct Configuration {
   String password;
   String openaiApiKey;
   String aiPromptStyle;
+  String city;
+  String countryCode;
 
   Configuration() = default;
 
-  Configuration(const String &ssid, const String &password, const String &openaiApiKey, const String &aiPromptStyle)
-      : ssid(ssid), password(password), openaiApiKey(openaiApiKey), aiPromptStyle(aiPromptStyle) {}
+  Configuration(const String &ssid, const String &password, const String &openaiApiKey, const String &aiPromptStyle,
+                const String &city, const String &countryCode)
+      : ssid(ssid),
+        password(password),
+        openaiApiKey(openaiApiKey),
+        aiPromptStyle(aiPromptStyle),
+        city(city),
+        countryCode(countryCode) {}
 };
 
 using OnSaveCallback = std::function<void(const Configuration &config)>;
