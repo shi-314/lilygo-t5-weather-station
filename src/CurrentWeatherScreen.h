@@ -17,6 +17,7 @@ class CurrentWeatherScreen : public Screen {
   const String countryCode;
 
   const uint8_t* primaryFont;
+  const uint8_t* mediumFont;
   const uint8_t* smallFont;
 
  public:

@@ -10,6 +10,7 @@ CurrentWeatherScreen::CurrentWeatherScreen(
       cityName(cityName),
       countryCode(countryCode),
       primaryFont(u8g2_font_helvB24_tf),
+      mediumFont(u8g2_font_helvR12_tr),
       smallFont(u8g2_font_helvR08_tr) {
   gfx.begin(display);
 }
@@ -39,14 +40,36 @@ void CurrentWeatherScreen::render() {
   int usableHeight = display.height() - topMargin;
 
   gfx.setFont(primaryFont);
-  String temperatureText = String(forecast.currentTemperature, 1) + "°C";
+  String temperatureText = String(forecast.currentTemperature, 1) + " °C";
   int temperatureWidth = gfx.getUTF8Width(temperatureText.c_str());
-  int temperatureHeight = gfx.getFontAscent() - gfx.getFontDescent();
-  int temperatureX = (display.width() - temperatureWidth) / 2;
-  int temperatureY = topMargin + (usableHeight - temperatureHeight) / 2 + gfx.getFontAscent();
+  int temperatureAscent = gfx.getFontAscent();
+  int temperatureDescent = gfx.getFontDescent();
 
+  gfx.setFont(mediumFont);
+  String weatherDescription = forecast.currentWeatherCodeDescription;
+  int descriptionWidth = gfx.getUTF8Width(weatherDescription.c_str());
+  int descriptionAscent = gfx.getFontAscent();
+  int descriptionDescent = gfx.getFontDescent();
+
+  int textSpacing = 4;
+  int totalGroupHeight = temperatureAscent - temperatureDescent + textSpacing + descriptionAscent - descriptionDescent;
+
+  int centerY = topMargin + usableHeight / 2;
+  int groupTopY = centerY - totalGroupHeight / 2;
+
+  int temperatureX = (display.width() - temperatureWidth) / 2;
+  int temperatureY = groupTopY + temperatureAscent;
+
+  gfx.setFont(primaryFont);
   gfx.setCursor(temperatureX, temperatureY);
   gfx.print(temperatureText);
+
+  int descriptionX = (display.width() - descriptionWidth) / 2;
+  int descriptionY = temperatureY - temperatureDescent + textSpacing + descriptionAscent;
+
+  gfx.setFont(mediumFont);
+  gfx.setCursor(descriptionX, descriptionY);
+  gfx.print(weatherDescription);
 
   gfx.setFont(smallFont);
   int smallFontHeight = gfx.getFontAscent() - gfx.getFontDescent();
