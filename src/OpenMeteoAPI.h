@@ -6,14 +6,18 @@
 
 #include <vector>
 
-// Forward declaration (actual WiFiConnection is expected to be defined elsewhere)
-class WiFiConnection;
+struct GeocodingResult {
+  String name;
+  float latitude;
+  float longitude;
+  float elevation;
+  String countryCode;
+};
 
-class Weather {
+class OpenMeteoAPI {
  public:
-  Weather(float latitude, float longitude);
+  OpenMeteoAPI(float latitude, float longitude);
 
-  // Uses the global wifi object to check connectivity before updating
   void update();
   String getWeatherText() const;
   String getLastUpdateTime() const;
@@ -32,9 +36,12 @@ class Weather {
   String getWeatherDescription() const;
   String getLastPayload() const;
 
+  GeocodingResult getLocationByCity(const String& cityName, const String& countryCode = "") const;
+
  private:
   // API settings
-  const char* openMeteoEndpoint = "https://api.open-meteo.com/v1/forecast";
+  const char* forecastEndpoint = "https://api.open-meteo.com/v1/forecast";
+  const char* geocodingEndpoint = "https://geocoding-api.open-meteo.com/v1/search";
   const float latitude;
   const float longitude;
 

@@ -8,7 +8,7 @@
 #include "ConfigurationServer.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
-#include "Weather.h"
+#include "OpenMeteoAPI.h"
 #include "WiFiConnection.h"
 #include "WifiErrorScreen.h"
 #include "battery.h"
@@ -38,8 +38,8 @@ GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
-Weather weather(latitude, longitude);
-MeteogramWeatherScreen weatherScreen(display, weather);
+OpenMeteoAPI openMeteoAPI(latitude, longitude);
+MeteogramWeatherScreen weatherScreen(display, openMeteoAPI);
 ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle));
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
@@ -102,16 +102,16 @@ void displayCurrentScreen() {
     }
     case METEOGRAM_SCREEN:
       Serial.println("Displaying meteogram screen");
-      weather.update();
+      openMeteoAPI.update();
       weatherScreen.render();
       break;
     case MESSAGE_SCREEN: {
       Serial.println("Displaying message screen");
-      weather.update();
+      openMeteoAPI.update();
 
       String prompt = aiWeatherPrompt;
       prompt += "- Use the following style: " + String(aiPromptStyle) + "\n";
-      prompt += weather.getLastPayload();
+      prompt += openMeteoAPI.getLastPayload();
 
       ChatGPTClient chatGPTClient(openaiApiKey);
       String chatGPTResponse = chatGPTClient.generateContent(prompt);
@@ -125,7 +125,7 @@ void displayCurrentScreen() {
     default:
       Serial.println("Unknown screen index, defaulting to meteogram");
       currentScreenIndex = METEOGRAM_SCREEN;
-      weather.update();
+      openMeteoAPI.update();
       weatherScreen.render();
       break;
   }

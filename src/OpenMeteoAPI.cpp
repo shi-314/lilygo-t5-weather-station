@@ -1,12 +1,12 @@
-#include "Weather.h"
+#include "OpenMeteoAPI.h"
 
 #include <time.h>
 
-Weather::Weather(float latitude, float longitude) : latitude(latitude), longitude(longitude) {}
+OpenMeteoAPI::OpenMeteoAPI(float latitude, float longitude) : latitude(latitude), longitude(longitude) {}
 
-void Weather::update() {
+void OpenMeteoAPI::update() {
   HTTPClient http;
-  String url = String(openMeteoEndpoint) + "?latitude=" + String(latitude, 6) + "&longitude=" + String(longitude, 6) +
+  String url = String(forecastEndpoint) + "?latitude=" + String(latitude, 6) + "&longitude=" + String(longitude, 6) +
                "&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m,cloud_cover_low" +
                "&current=wind_speed_10m,wind_gusts_10m,temperature_2m,weather_code,wind_direction_10m" +
                "&forecast_days=1" + "&timezone=auto";
@@ -121,7 +121,7 @@ void Weather::update() {
   http.end();
 }
 
-String Weather::getWeatherDescription(int weatherCode) const {
+String OpenMeteoAPI::getWeatherDescription(int weatherCode) const {
   // https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM
   switch (weatherCode) {
     // Clear and cloudy conditions
@@ -282,34 +282,79 @@ String Weather::getWeatherDescription(int weatherCode) const {
   }
 }
 
-String Weather::getWeatherText() const { return weatherData; }
+String OpenMeteoAPI::getWeatherText() const { return weatherData; }
 
-String Weather::getLastUpdateTime() const { return lastUpdateTime; }
+String OpenMeteoAPI::getLastUpdateTime() const { return lastUpdateTime; }
 
-bool Weather::isTimeToUpdate(unsigned long currentMillis) const {
+bool OpenMeteoAPI::isTimeToUpdate(unsigned long currentMillis) const {
   return (currentMillis - lastWeatherUpdate) >= updateInterval || lastWeatherUpdate == 0;
 }
 
-int Weather::getWindDirection() const { return windDirection; }
+int OpenMeteoAPI::getWindDirection() const { return windDirection; }
 
-std::vector<float> Weather::getHourlyTemperatures() const { return hourlyTemperatures; }
+std::vector<float> OpenMeteoAPI::getHourlyTemperatures() const { return hourlyTemperatures; }
 
-std::vector<float> Weather::getHourlyWindSpeeds() const { return hourlyWindSpeeds; }
+std::vector<float> OpenMeteoAPI::getHourlyWindSpeeds() const { return hourlyWindSpeeds; }
 
-std::vector<float> Weather::getHourlyWindGusts() const { return hourlyWindGusts; }
+std::vector<float> OpenMeteoAPI::getHourlyWindGusts() const { return hourlyWindGusts; }
 
-std::vector<String> Weather::getHourlyTime() const { return hourlyTime; }
+std::vector<String> OpenMeteoAPI::getHourlyTime() const { return hourlyTime; }
 
-std::vector<float> Weather::getHourlyPrecipitation() const { return hourlyPrecipitation; }
+std::vector<float> OpenMeteoAPI::getHourlyPrecipitation() const { return hourlyPrecipitation; }
 
-std::vector<float> Weather::getHourlyCloudCoverage() const { return hourlyCloudCoverage; }
+std::vector<float> OpenMeteoAPI::getHourlyCloudCoverage() const { return hourlyCloudCoverage; }
 
-float Weather::getCurrentTemperature() const { return currentTemperature; }
+float OpenMeteoAPI::getCurrentTemperature() const { return currentTemperature; }
 
-float Weather::getCurrentWindSpeed() const { return currentWindSpeed; }
+float OpenMeteoAPI::getCurrentWindSpeed() const { return currentWindSpeed; }
 
-float Weather::getCurrentWindGusts() const { return currentWindGusts; }
+float OpenMeteoAPI::getCurrentWindGusts() const { return currentWindGusts; }
 
-String Weather::getWeatherDescription() const { return currentWeatherDescription; }
+String OpenMeteoAPI::getWeatherDescription() const { return currentWeatherDescription; }
 
-String Weather::getLastPayload() const { return lastApiPayload; }
+String OpenMeteoAPI::getLastPayload() const { return lastApiPayload; }
+
+GeocodingResult OpenMeteoAPI::getLocationByCity(const String& cityName, const String& countryCode) const {
+  GeocodingResult result;
+
+  HTTPClient http;
+  String url = String(geocodingEndpoint) + "?name=" + cityName + "&count=1&language=en&format=json";
+
+  if (countryCode.length() > 0) {
+    url += "&countryCode=" + countryCode;
+  }
+
+  http.begin(url);
+  int httpCode = http.GET();
+
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("Failed to get geocoding data");
+    http.end();
+    return result;
+  }
+
+  String payload = http.getString();
+  DynamicJsonDocument doc(4096);
+  DeserializationError error = deserializeJson(doc, payload);
+
+  if (error) {
+    Serial.print("Geocoding JSON parsing failed: ");
+    Serial.println(error.c_str());
+    http.end();
+    return result;
+  }
+
+  JsonArray results = doc["results"].as<JsonArray>();
+  if (results.size() > 0) {
+    JsonObject firstResult = results[0];
+
+    result.name = firstResult["name"].as<String>();
+    result.latitude = firstResult["latitude"].as<float>();
+    result.longitude = firstResult["longitude"].as<float>();
+    result.elevation = firstResult["elevation"].as<float>();
+    result.countryCode = firstResult["country_code"].as<String>();
+  }
+
+  http.end();
+  return result;
+}
