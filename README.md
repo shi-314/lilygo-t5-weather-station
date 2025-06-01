@@ -10,6 +10,11 @@ A weather station for LilyGO T5 e-paper displays that shows current weather, for
 - Configuration via web interface
 - Deep sleep mode for battery efficiency
 
+## Data Sources
+
+- **Weather data**: [Open-Meteo API](https://open-meteo.com/)
+- **AI summaries**: OpenAI API (optional, requires API key)
+
 ## Hardware Required
 
 - [LilyGO T5 v2.13 e-paper display board](https://lilygo.cc/en-pl/products/t5-v2-3-1?variant=42366871666869)
