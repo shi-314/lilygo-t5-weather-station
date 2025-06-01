@@ -286,8 +286,6 @@ void setup() {
   if (!isButtonWakeup()) {
     if (!hasValidWiFiCredentials()) {
       currentScreenIndex = CONFIG_SCREEN;
-    } else {
-      currentScreenIndex = CURRENT_WEATHER_SCREEN;
     }
   }
 
