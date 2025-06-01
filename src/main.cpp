@@ -1,345 +1,209 @@
-/*
-    LilyGo Ink Screen Series u8g2Fonts Test
-        - Created by Kaibin he
-*/
-
-// According to the board, cancel the corresponding macro definition
-
-// #define LILYGO_T5_V213
-// #define LILYGO_T5_V22
-// #define LILYGO_T5_V24
-// #define LILYGO_T5_V28
-#define LILYGO_T5_V213
-// #define LILYGO_T5_V266
-// #define LILYGO_EPD_DISPLAY_102
-// #define LILYGO_EPD_DISPLAY_154
-#include <FunctionalInterrupt.h>
-#include <SD.h>
-#include <FS.h>
-#define _HAS_SDCARD_
-
-#if defined(LILYGO_T5_V213)
-#define POWER_ENABLE 27
-#endif
-
-bool rlst = false;
-// Set up the rgb led names
-uint8_t ledR = 25;
-uint8_t ledG = 32;
-uint8_t ledB = 33;
-
-uint8_t ledArray[3] = {1, 2, 3}; // three led channels
-
-const bool invert = true; // set true if common anode, false if common cathode
-
-uint8_t color = 0;          // a value from 0 to 255 representing the hue
-uint32_t R, G, B;           // the Red Green and Blue color components
-uint8_t brightness = 255;  // 255 is maximum brightness, but can be changed.  Might need 256 for common anode to fully turn off.
-
-
-
-
 #include <Arduino.h>
-#include <boards.h>
-#include <GxEPD.h>
+#include <GxEPD2_4G_4G.h>
+#include <gdey/GxEPD2_213_GDEY0213B74.h>
+#include <time.h>
 
-// Button pin definitions
-#define BUTTON_1 35
-#define BUTTON_2 0
-#define BUTTON_3 34
+#include "ChatGPTClient.h"
+#include "ConfigurationScreen.h"
+#include "ConfigurationServer.h"
+#include "MessageScreen.h"
+#include "MeteogramWeatherScreen.h"
+#include "Weather.h"
+#include "WiFiConnection.h"
+#include "WifiErrorScreen.h"
+#include "battery.h"
+#include "boards.h"
 
-#if defined(LILYGO_T5_V213)
-#include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP
-#elif defined(LILYGO_T5_V266)
-#include <GxDEPG0266BN/GxDEPG0266BN.h>    // 2.66" b/w   form DKE GROUP
-#elif defined(LILYGO_T5_V102) || defined(LILYGO_EPD_DISPLAY_102)
-#include <GxGDGDEW0102T4/GxGDGDEW0102T4.h> //1.02" b/w
-#elif defined(LILYGO_T5_V24)
-#include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP
-#else
-// #include <GxGDGDEW0102T4/GxGDGDEW0102T4.h> //1.02" b/w
-// #include <GxGDEW0154Z04/GxGDEW0154Z04.h>  // 1.54" b/w/r 200x200
-// #include <GxGDEW0154Z17/GxGDEW0154Z17.h>  // 1.54" b/w/r 152x152
-// #include <GxGDEH0154D67/GxGDEH0154D67.h>  // 1.54" b/w
-// #include <GxDEPG0150BN/GxDEPG0150BN.h>    // 1.51" b/w   form DKE GROUP
-// #include <GxDEPG0266BN/GxDEPG0266BN.h>    // 2.66" b/w   form DKE GROUP
-// #include <GxDEPG0290R/GxDEPG0290R.h>      // 2.9" b/w/r  form DKE GROUP
-// #include <GxDEPG0290B/GxDEPG0290B.h>      // 2.9" b/w    form DKE GROUP
-// #include <GxGDEW029Z10/GxGDEW029Z10.h>    // 2.9" b/w/r  form GoodDisplay
-// #include <GxGDEW0213Z16/GxGDEW0213Z16.h>  // 2.13" b/w/r form GoodDisplay
-// #include <GxGDE0213B1/GxGDE0213B1.h>      // 2.13" b/w  old panel , form GoodDisplay
-// #include <GxGDEH0213B72/GxGDEH0213B72.h>  // 2.13" b/w  old panel , form GoodDisplay
-// #include <GxGDEH0213B73/GxGDEH0213B73.h>  // 2.13" b/w  old panel , form GoodDisplay
-// #include <GxGDEM0213B74/GxGDEM0213B74.h>  // 2.13" b/w  form GoodDisplay 4-color
-// #include <GxGDEW0213M21/GxGDEW0213M21.h>  // 2.13"  b/w Ultra wide temperature , form GoodDisplay
-// #include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP
-// #include <GxGDEW027W3/GxGDEW027W3.h>      // 2.7" b/w   form GoodDisplay
-// #include <GxGDEW027C44/GxGDEW027C44.h>    // 2.7" b/w/r form GoodDisplay
-// #include <GxGDEH029A1/GxGDEH029A1.h>      // 2.9" b/w   form GoodDisplay
-// #include <GxDEPG0750BN/GxDEPG0750BN.h>    // 7.5" b/w   form DKE GROUP
-#endif
+RTC_DATA_ATTR char wifiSSID[64] = "";
+RTC_DATA_ATTR char wifiPassword[64] = "";
+RTC_DATA_ATTR char openaiApiKey[200] = "";
+RTC_DATA_ATTR char aiWeatherPrompt[1024] =
+    "I will share a JSON payload with you from the Open Meteo API which has weather forecast data for the current "
+    "day. You have to summarize it into one sentence:\n"
+    "- 18 words or less\n"
+    "- include the rough temperature in the sentence\n"
+    "- forecast for the whole day is included in the sentence\n"
+    "- use the time of the day to make the sentence more interesting, but don't mention the exact time\n"
+    "- don't mention the location\n"
+    "- only include the current weather and the forecast for the remaining day, not the past\n";
 
-#include GxEPD_BitmapExamples
-#include <GxIO/GxIO_SPI/GxIO_SPI.h>
-#include <GxIO/GxIO.h>
-#include <WiFi.h>
-#include <U8g2lib.h>
+// Berlin
+const float latitude = 52.520008;
+const float longitude = 13.404954;
 
-GxIO_Class io(SPI,  EPD_CS, EPD_DC,  EPD_RSET);
-GxEPD_Class display(io, EPD_RSET, EPD_BUSY);
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ SCL, /* data=*/ SDA, /* reset=*/ U8X8_PIN_NONE);
+GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
+    GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
-#if defined(_HAS_SDCARD_) && !defined(_USE_SHARED_SPI_BUS_)
-SPIClass SDSPI(VSPI);
-#endif
+const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
+Weather weather(latitude, longitude);
+MeteogramWeatherScreen weatherScreen(display, weather);
+ConfigurationServer configurationServer(wifiSSID, wifiPassword, openaiApiKey);
 
-bool button0_flag = 0;
-bool button1_flag = 0;
-bool button2_flag = 0;
+enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
 
-class Button
-{
-public:
+RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
 
-    Button(uint8_t reqPin) : PIN(reqPin)
-    {
-        pinMode(PIN, INPUT_PULLUP);
-        attachInterrupt(PIN, std::bind(&Button::isr, this), FALLING);
-    };
-    ~Button()
-    {
-        detachInterrupt(PIN);
-    }
+void goToSleep(uint64_t sleepTime);
+void displayCurrentScreen();
+void cycleToNextScreen();
+bool isButtonWakeup();
+void updateConfiguration(const String& newSSID, const String& newPassword, const String& newOpenaiKey);
+bool hasValidOpenaiApiKey();
 
-    void IRAM_ATTR isr()
-    {
-        numberKeyPresses += 1;
-        pressed = true;
-    }
+bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
 
+bool hasValidOpenaiApiKey() { return strlen(openaiApiKey) > 0; }
 
-    void checkPressed()
-    {
-        if (pressed) {
-            delay(300);//flutter-free
-            if (PIN == BUTTON_3) button0_flag = 1;
-            else if (PIN == BUTTON_1) button1_flag = 1;
-            else if (PIN == BUTTON_2) button2_flag = 1;
-            pressed = false;
+bool isButtonWakeup() {
+  esp_sleep_wakeup_cause_t wakeupReason = esp_sleep_get_wakeup_cause();
+  return (wakeupReason == ESP_SLEEP_WAKEUP_EXT0);
+}
+
+void cycleToNextScreen() {
+  currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+
+  // Skip MESSAGE_SCREEN if no OpenAI API key is configured
+  if (currentScreenIndex == MESSAGE_SCREEN && !hasValidOpenaiApiKey()) {
+    currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+  }
+
+  Serial.println("Cycled to screen: " + String(currentScreenIndex));
+}
+
+void displayCurrentScreen() {
+  switch (currentScreenIndex) {
+    case CONFIG_SCREEN: {
+      Serial.println("Displaying configuration screen");
+      ConfigurationScreen configurationScreen(display, configurationServer.getWifiAccessPointName(),
+                                              configurationServer.getWifiAccessPointPassword());
+      configurationScreen.render();
+
+      configurationServer.run([](const String& ssid, const String& password, const String& openaiKey) {
+        updateConfiguration(ssid, password, openaiKey);
+      });
+
+      while (configurationServer.isRunning()) {
+        configurationServer.handleRequests();
+
+        if (digitalRead(BUTTON_1) == LOW) {
+          delay(50);
+          if (digitalRead(BUTTON_1) == LOW) {
+            Serial.println("Button pressed - exiting configuration mode");
+            break;
+          }
         }
+
+        delay(10);
+      }
+
+      configurationServer.stop();
+      break;
     }
+    case METEOGRAM_SCREEN:
+      Serial.println("Displaying meteogram screen");
+      weather.update();
+      weatherScreen.render();
+      break;
+    case MESSAGE_SCREEN: {
+      Serial.println("Displaying message screen");
+      weather.update();
+      String prompt = aiWeatherPrompt;
+      prompt += weather.getLastPayload();
+      ChatGPTClient chatGPTClient(openaiApiKey);
+      String chatGPTResponse = chatGPTClient.generateContent(prompt);
+      Serial.println("ChatGPT Response: " + chatGPTResponse);
 
-private:
-    const uint8_t PIN;
-    volatile uint32_t numberKeyPresses;
-    volatile bool pressed;
-};
-
-Button button0(BUTTON_3);
-Button button1(BUTTON_1);
-Button button2(BUTTON_2);
-
-
-bool start = 0;//led start
-void LilyGo_logo(void);
-void button0_callback(void);
-void button1_callback(void);
-void button2_callback(void);
-void hueToRGB(uint8_t hue, uint8_t brightness);
-
-bool setupSDCard(void)
-{
-#if defined(_HAS_SDCARD_) && !defined(_USE_SHARED_SPI_BUS_)
-    SDSPI.begin(SDCARD_SCLK, SDCARD_MISO, SDCARD_MOSI);
-    return SD.begin(SDCARD_CS, SDSPI);
-#elif defined(_HAS_SDCARD_)
-    return SD.begin(SDCARD_CS);
-#endif
-    return false;
-}
-void setup(void)
-{
-    Serial.begin(115200);
-
-
-#if defined(LILYGO_EPD_DISPLAY_102)
-    pinMode(EPD_POWER_ENABLE, OUTPUT);
-    digitalWrite(EPD_POWER_ENABLE, HIGH);
-#endif /*LILYGO_EPD_DISPLAY_102*/
-#if defined(LILYGO_T5_V213)
-    pinMode(POWER_ENABLE, OUTPUT);
-    digitalWrite(POWER_ENABLE, HIGH);
-#endif /*LILYGO_T5_V213*/
-
-
-
-    ledcAttachPin(ledR, 1); // assign RGB led pins to channels
-    ledcAttachPin(ledG, 2);
-    ledcAttachPin(ledB, 3);
-
-    // Initialize channels
-    // channels 0-15, resolution 1-16 bits, freq limits depend on resolution
-    // ledcSetup(uint8_t channel, uint32_t freq, uint8_t resolution_bits);
-    ledcSetup(1, 12000, 8); // 12 kHz PWM, 8-bit resolution
-    ledcSetup(2, 12000, 8);
-    ledcSetup(3, 12000, 8);
-
-    rlst = setupSDCard();
-
-    SPI.begin(EPD_SCLK, EPD_MISO, EPD_MOSI);
-    display.init(); // enable diagnostic output on Serial
-    u8g2.begin();
-    display.setTextColor(GxEPD_BLACK);
-    u8g2.setFontMode(1);                           // use u8g2 transparent mode (this is default)
-    u8g2.setFontDirection(1);                      // left to right (this is default)
-    u8g2.setDrawColor(1);                          // set draw color to black
-    u8g2.setFont(u8g2_font_helvR12_tf);            // select u8g2 font from here: https://github.com/olikraus/u8g2/wiki/fntlistall
-    LilyGo_logo();
-    Serial.println("setup done");
-}
-
-
-void loop()
-{
-    button0.checkPressed();
-    button1.checkPressed();
-    button2.checkPressed();
-
-
-    if (button0_flag == 1)button0_callback();
-    else if (button1_flag == 1)button1_callback();
-    else if (button2_flag == 1)button2_callback();
-
-}
-
-
-
-void hueToRGB(uint8_t hue, uint8_t brightness)
-{
-    uint16_t scaledHue = (hue * 6);
-    uint8_t segment = scaledHue / 256; // segment 0 to 5 around the
-    // color wheel
-    uint16_t segmentOffset =
-        scaledHue - (segment * 256); // position within the segment
-
-    uint8_t complement = 0;
-    uint16_t prev = (brightness * ( 255 -  segmentOffset)) / 256;
-    uint16_t next = (brightness *  segmentOffset) / 256;
-
-    if (invert) {
-        brightness = 255 - brightness;
-        complement = 255;
-        prev = 255 - prev;
-        next = 255 - next;
+      MessageScreen messageScreen(display);
+      messageScreen.setMessageText(chatGPTResponse);
+      messageScreen.render();
+      break;
     }
-
-    switch (segment ) {
-    case 0:      // red
-        R = brightness;
-        G = next;
-        B = complement;
-        break;
-    case 1:     // yellow
-        R = prev;
-        G = brightness;
-        B = complement;
-        break;
-    case 2:     // green
-        R = complement;
-        G = brightness;
-        B = next;
-        break;
-    case 3:    // cyan
-        R = complement;
-        G = prev;
-        B = brightness;
-        break;
-    case 4:    // blue
-        R = next;
-        G = complement;
-        B = brightness;
-        break;
-    case 5:      // magenta
     default:
-        R = brightness;
-        G = complement;
-        B = prev;
-        break;
+      Serial.println("Unknown screen index, defaulting to meteogram");
+      currentScreenIndex = METEOGRAM_SCREEN;
+      weather.update();
+      weatherScreen.render();
+      break;
+  }
+}
+
+void updateConfiguration(const String& newSSID, const String& newPassword, const String& newOpenaiKey) {
+  if (newSSID.length() >= sizeof(wifiSSID)) {
+    Serial.println("Error: SSID too long, maximum length is " + String(sizeof(wifiSSID) - 1));
+    return;
+  }
+
+  if (newPassword.length() >= sizeof(wifiPassword)) {
+    Serial.println("Error: Password too long, maximum length is " + String(sizeof(wifiPassword) - 1));
+    return;
+  }
+
+  if (newOpenaiKey.length() >= sizeof(openaiApiKey)) {
+    Serial.println("Error: OpenAI API key too long, maximum length is " + String(sizeof(openaiApiKey) - 1));
+    return;
+  }
+
+  memset(wifiSSID, 0, sizeof(wifiSSID));
+  memset(wifiPassword, 0, sizeof(wifiPassword));
+  memset(openaiApiKey, 0, sizeof(openaiApiKey));
+
+  strncpy(wifiSSID, newSSID.c_str(), sizeof(wifiSSID) - 1);
+  strncpy(wifiPassword, newPassword.c_str(), sizeof(wifiPassword) - 1);
+  strncpy(openaiApiKey, newOpenaiKey.c_str(), sizeof(openaiApiKey) - 1);
+
+  Serial.println("Configuration updated in RTC memory");
+  Serial.println("WiFi SSID: " + String(wifiSSID));
+  Serial.println("OpenAI API Key: " + String(hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]"));
+}
+
+void goToSleep(uint64_t sleepTime) {
+  Serial.println("Going to deep sleep for " + String(sleepTime / 1000000) + " seconds");
+  Serial.println("Press button to wake up early and cycle screens");
+
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_39, 0);
+  esp_sleep_enable_timer_wakeup(sleepTime);
+  esp_deep_sleep_start();
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(BATTERY_PIN, INPUT);
+  pinMode(BUTTON_1, INPUT_PULLUP);
+  SPI.begin(EPD_SCLK, EPD_MISO, EPD_MOSI);
+
+  if (!isButtonWakeup()) {
+    if (!hasValidWiFiCredentials()) {
+      currentScreenIndex = CONFIG_SCREEN;
+    } else {
+      currentScreenIndex = METEOGRAM_SCREEN;
     }
+  }
+
+  if (isButtonWakeup()) {
+    cycleToNextScreen();
+  }
+
+  if (currentScreenIndex != CONFIG_SCREEN) {
+    WiFiConnection wifi(wifiSSID, wifiPassword);
+    wifi.connect();
+    if (!wifi.isConnected()) {
+      Serial.println("Failed to connect to WiFi");
+      WifiErrorScreen errorScreen(display);
+      errorScreen.render();
+      goToSleep(deepSleepMicros);
+      return;
+    }
+  }
+
+  displayCurrentScreen();
+
+  if (currentScreenIndex == CONFIG_SCREEN) {
+    goToSleep(1000000);  // 1 second
+  } else {
+    goToSleep(deepSleepMicros);
+  }
 }
 
-
-//button0 callback function
-void button0_callback(void)
-{
-    // red
-    ledcWrite(1, 0);
-    ledcWrite(2, 255);
-    ledcWrite(3, 0);
-
-    button0_flag = 0;//Clear flag bit
-
-}
-
-//button1 callback function
-void button1_callback(void)
-{
-    //green
-    ledcWrite(1, 255);
-    ledcWrite(2, 0);
-    ledcWrite(3, 0);
-
-    button1_flag = 0;//Clear flag bit
-}
-
-//button2 callback function
-void button2_callback(void)
-{
-    //blue
-    ledcWrite(1, 0);
-    ledcWrite(2, 0);
-    ledcWrite(3, 255);
-
-    button2_flag = 0;//Clear flag bit
-
-}
-
-
-
-
-void LilyGo_logo(void)
-{
-
-    display.setRotation(0);
-    display.fillScreen(GxEPD_WHITE);
-
-#if defined(_HAS_COLOR_)
-    display.drawExampleBitmap(BitmapExample1, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_RED);
-#else
-    display.drawExampleBitmap(BitmapExample1, 0, 0, GxEPD_WIDTH, GxEPD_HEIGHT, GxEPD_BLACK);
-#endif
-
-#if defined(_HAS_SDCARD_)
-    display.setRotation(1);
-    display.setTextColor(GxEPD_BLACK);
-    display.setFont();
-#if defined(LILYGO_T5_V213)
-    display.setCursor(0, display.height() - 15);
-#else
-    display.setCursor(20, display.height() - 15);
-#endif
-    String sizeString = "SD:" + String(SD.cardSize() / 1024.0 / 1024.0 / 1024.0) + "G";
-    display.println(rlst ? sizeString : "SD:N/A");
-
-    int16_t x1, x2;
-    uint16_t w, h;
-    String str = GxEPD_BitmapExamplesQ;
-    str = str.substring(2, str.lastIndexOf("/"));
-    display.getTextBounds(str, 0, 0, &x1, &x2, &w, &h);
-    display.setCursor(display.width() - w, display.height() - 15);
-    display.println(str);
-#endif
-
-    display.update();
-}
+void loop() {}

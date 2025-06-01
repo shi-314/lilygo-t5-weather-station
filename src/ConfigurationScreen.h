@@ -1,0 +1,28 @@
+#ifndef CONFIGURATION_SCREEN_H
+#define CONFIGURATION_SCREEN_H
+
+#include <GxEPD2_4G_4G.h>
+#include <U8g2_for_Adafruit_GFX.h>
+#include <gdey/GxEPD2_213_GDEY0213B74.h>
+#include <qrcode.h>
+
+#include "Screen.h"
+
+class ConfigurationScreen : public Screen {
+ private:
+  GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
+  String accessPointName;
+  String accessPointPassword;
+  U8G2_FOR_ADAFRUIT_GFX gfx;
+
+  void drawQRCode(const String& wifiString, int x, int y, int scale = 2);
+  String generateWiFiQRString() const;
+
+ public:
+  ConfigurationScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display,
+                      const String& accessPointName, const String& accessPointPassword);
+
+  void render() override;
+};
+
+#endif
