@@ -15,12 +15,20 @@
 #include "battery.h"
 #include "boards.h"
 
-RTC_DATA_ATTR char wifiSSID[64] = "";
-RTC_DATA_ATTR char wifiPassword[64] = "";
-RTC_DATA_ATTR char openaiApiKey[200] = "";
-RTC_DATA_ATTR char aiPromptStyle[200] = "neutral";
-RTC_DATA_ATTR char city[100] = "Berlin";
-RTC_DATA_ATTR char countryCode[3] = "DE";
+// Include development config if available, otherwise use default config
+#if __has_include("config_dev.h")
+#include "config_dev.h"
+#else
+#include "config_default.h"
+#endif
+
+RTC_DATA_ATTR char wifiSSID[64];
+RTC_DATA_ATTR char wifiPassword[64];
+RTC_DATA_ATTR char openaiApiKey[200];
+RTC_DATA_ATTR char aiPromptStyle[200];
+RTC_DATA_ATTR char city[100];
+RTC_DATA_ATTR char countryCode[3];
+RTC_DATA_ATTR bool configInitialized = false;
 RTC_DATA_ATTR float latitude = NAN;
 RTC_DATA_ATTR float longitude = NAN;
 
@@ -62,6 +70,7 @@ void cycleToNextScreen();
 bool isButtonWakeup();
 void updateConfiguration(const Configuration& config);
 bool hasValidOpenaiApiKey();
+void initializeDefaultConfig();
 
 bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
 
@@ -244,8 +253,30 @@ void goToSleep(uint64_t sleepTime) {
   esp_deep_sleep_start();
 }
 
+void initializeDefaultConfig() {
+  if (configInitialized) return;
+
+  strncpy(wifiSSID, DEFAULT_WIFI_SSID, sizeof(wifiSSID) - 1);
+  strncpy(wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(wifiPassword) - 1);
+  strncpy(openaiApiKey, DEFAULT_OPENAI_API_KEY, sizeof(openaiApiKey) - 1);
+  strncpy(aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(aiPromptStyle) - 1);
+  strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
+  strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
+
+  wifiSSID[sizeof(wifiSSID) - 1] = '\0';
+  wifiPassword[sizeof(wifiPassword) - 1] = '\0';
+  openaiApiKey[sizeof(openaiApiKey) - 1] = '\0';
+  aiPromptStyle[sizeof(aiPromptStyle) - 1] = '\0';
+  city[sizeof(city) - 1] = '\0';
+  countryCode[sizeof(countryCode) - 1] = '\0';
+
+  configInitialized = true;
+}
+
 void setup() {
   Serial.begin(115200);
+
+  initializeDefaultConfig();
 
   pinMode(BATTERY_PIN, INPUT);
   pinMode(BUTTON_1, INPUT_PULLUP);
