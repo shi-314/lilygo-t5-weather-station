@@ -38,7 +38,7 @@ GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 
-OpenMeteoAPI openMeteoAPI(latitude, longitude);
+OpenMeteoAPI openMeteoAPI;
 ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle));
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
@@ -99,13 +99,13 @@ void displayCurrentScreen() {
       break;
     }
     case METEOGRAM_SCREEN: {
-      WeatherForecastToday forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
       break;
     }
     case MESSAGE_SCREEN: {
-      WeatherForecastToday forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
 
       String prompt = aiWeatherPrompt;
       prompt += "- Use the following style: " + String(aiPromptStyle) + "\n";
@@ -122,7 +122,7 @@ void displayCurrentScreen() {
     default: {
       Serial.println("Unknown screen index, defaulting to meteogram");
       currentScreenIndex = METEOGRAM_SCREEN;
-      WeatherForecastToday forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
       break;

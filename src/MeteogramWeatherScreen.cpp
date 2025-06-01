@@ -6,7 +6,7 @@
 #include "battery.h"
 
 MeteogramWeatherScreen::MeteogramWeatherScreen(
-    GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display, const WeatherForecastToday &forecast)
+    GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display, const WeatherForecast &forecast)
     : display(display),
       forecast(forecast),
       primaryFont(u8g2_font_helvR18_tf),
