@@ -1,12 +1,14 @@
-#include "Weather.h"
+#include "OpenMeteoAPI.h"
 
 #include <time.h>
 
-Weather::Weather(float latitude, float longitude) : latitude(latitude), longitude(longitude) {}
+OpenMeteoAPI::OpenMeteoAPI() {}
 
-void Weather::update() {
+WeatherForecast OpenMeteoAPI::getForecast(float latitude, float longitude) const {
+  WeatherForecast forecast;
+
   HTTPClient http;
-  String url = String(openMeteoEndpoint) + "?latitude=" + String(latitude, 6) + "&longitude=" + String(longitude, 6) +
+  String url = String(forecastEndpoint) + "?latitude=" + String(latitude, 6) + "&longitude=" + String(longitude, 6) +
                "&hourly=temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m,cloud_cover_low" +
                "&current=wind_speed_10m,wind_gusts_10m,temperature_2m,weather_code,wind_direction_10m" +
                "&forecast_days=1" + "&timezone=auto";
@@ -16,112 +18,80 @@ void Weather::update() {
 
   if (httpCode != HTTP_CODE_OK) {
     Serial.println("Failed to get weather data");
-    weatherData = "Weather error";
-    hourlyTemperatures.clear();
-    hourlyWindSpeeds.clear();
-    hourlyWindGusts.clear();
-    hourlyTime.clear();
-    hourlyPrecipitation.clear();
-    hourlyCloudCoverage.clear();
     http.end();
-    return;
+    return forecast;
   }
 
   String payload = http.getString();
-  lastApiPayload = payload;
+  forecast.apiPayload = payload;
+
   DynamicJsonDocument doc(16384);
   DeserializationError error = deserializeJson(doc, payload);
 
   if (error) {
     Serial.print("JSON parsing failed: ");
     Serial.println(error.c_str());
-    weatherData = "JSON error";
-    hourlyTemperatures.clear();
-    hourlyWindSpeeds.clear();
-    hourlyWindGusts.clear();
-    hourlyTime.clear();
-    hourlyPrecipitation.clear();
-    hourlyCloudCoverage.clear();
     http.end();
-    return;
+    return forecast;
   }
 
-  float temp = doc["current"]["temperature_2m"];
-  int weatherCode = doc["current"]["weather_code"];
+  forecast.currentTemperature = doc["current"]["temperature_2m"];
+  forecast.currentWeatherCode = doc["current"]["weather_code"];
+  forecast.currentWeatherCodeDescription = getWeatherDescription(forecast.currentWeatherCode);
   String timeStr = doc["current"]["time"].as<String>();
+
   float windSpeedKmh = doc["current"]["wind_speed_10m"].as<float>();
-  float windSpeed = windSpeedKmh / 3.6;  // Convert km/h to m/s
-  String windSpeedUnit = doc["current_units"]["wind_speed_10m"];
-  windDirection = doc["current"]["wind_direction_10m"];
+  forecast.currentWindSpeed = windSpeedKmh / 3.6;  // Convert km/h to m/s
+
+  forecast.currentWindDirection = doc["current"]["wind_direction_10m"];
+
   float windGustsKmh = doc["current"]["wind_gusts_10m"].as<float>();
-  float windGusts = windGustsKmh / 3.6;  // Convert km/h to m/s
-  // Serial.println(payload);
+  forecast.currentWindGusts = windGustsKmh / 3.6;  // Convert km/h to m/s
 
-  currentTemperature = temp;
-  currentWindSpeed = windSpeed;
-  currentWindGusts = windGusts;
-  currentWeatherDescription = getWeatherDescription(weatherCode);
-
-  // Clear previous hourly data
-  hourlyTemperatures.clear();
-  hourlyWindSpeeds.clear();
-  hourlyWindGusts.clear();
-  hourlyTime.clear();
-  hourlyPrecipitation.clear();
-  hourlyCloudCoverage.clear();
-
-  // Parse hourly temperature data
-  JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
-  for (JsonVariant v : hourly_temp_array) {
-    hourlyTemperatures.push_back(v.as<float>());
-  }
-
-  // Parse hourly wind speed data
-  JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
-  for (JsonVariant v : hourly_wind_array) {
-    hourlyWindSpeeds.push_back(v.as<float>() / 3.6);
-  }
-
-  // Parse hourly wind gusts data
-  JsonArray hourly_wind_gusts_array = doc["hourly"]["wind_gusts_10m"].as<JsonArray>();
-  for (JsonVariant v : hourly_wind_gusts_array) {
-    hourlyWindGusts.push_back(v.as<float>() / 3.6);
-  }
-
-  // Parse hourly time data
-  JsonArray hourly_time_array = doc["hourly"]["time"].as<JsonArray>();
-  for (JsonVariant v : hourly_time_array) {
-    String fullTimestamp = v.as<String>();
-    // Extract just HH:MM for display
-    hourlyTime.push_back(fullTimestamp.substring(11, 16));
-  }
-
-  // Parse hourly precipitation data
-  JsonArray hourly_precipitation_array = doc["hourly"]["precipitation"].as<JsonArray>();
-  for (JsonVariant v : hourly_precipitation_array) {
-    hourlyPrecipitation.push_back(v.as<float>());
-  }
-
-  // Parse hourly cloud coverage data
-  JsonArray hourly_cloud_array = doc["hourly"]["cloud_cover_low"].as<JsonArray>();
-  for (JsonVariant v : hourly_cloud_array) {
-    hourlyCloudCoverage.push_back(v.as<float>());
-  }
-
-  weatherData = String(temp, 1) + " C " + getWeatherDescription(weatherCode);
+  forecast.currentWeatherDescription = getWeatherDescription(forecast.currentWeatherCode);
 
   struct tm timeinfo;
   strptime(timeStr.c_str(), "%Y-%m-%dT%H:%M", &timeinfo);
   char timeBuffer[6];
   strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
-  lastUpdateTime = String(timeBuffer);
+  forecast.lastUpdateTime = String(timeBuffer);
 
-  lastWeatherUpdate = millis();
+  JsonArray hourly_temp_array = doc["hourly"]["temperature_2m"].as<JsonArray>();
+  for (JsonVariant v : hourly_temp_array) {
+    forecast.hourlyTemperatures.push_back(v.as<float>());
+  }
+
+  JsonArray hourly_wind_array = doc["hourly"]["wind_speed_10m"].as<JsonArray>();
+  for (JsonVariant v : hourly_wind_array) {
+    forecast.hourlyWindSpeeds.push_back(v.as<float>() / 3.6);
+  }
+
+  JsonArray hourly_wind_gusts_array = doc["hourly"]["wind_gusts_10m"].as<JsonArray>();
+  for (JsonVariant v : hourly_wind_gusts_array) {
+    forecast.hourlyWindGusts.push_back(v.as<float>() / 3.6);
+  }
+
+  JsonArray hourly_time_array = doc["hourly"]["time"].as<JsonArray>();
+  for (JsonVariant v : hourly_time_array) {
+    String fullTimestamp = v.as<String>();
+    forecast.hourlyTime.push_back(fullTimestamp.substring(11, 16));
+  }
+
+  JsonArray hourly_precipitation_array = doc["hourly"]["precipitation"].as<JsonArray>();
+  for (JsonVariant v : hourly_precipitation_array) {
+    forecast.hourlyPrecipitation.push_back(v.as<float>());
+  }
+
+  JsonArray hourly_cloud_array = doc["hourly"]["cloud_cover_low"].as<JsonArray>();
+  for (JsonVariant v : hourly_cloud_array) {
+    forecast.hourlyCloudCoverage.push_back(v.as<float>());
+  }
 
   http.end();
+  return forecast;
 }
 
-String Weather::getWeatherDescription(int weatherCode) const {
+String OpenMeteoAPI::getWeatherDescription(int weatherCode) const {
   // https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM
   switch (weatherCode) {
     // Clear and cloudy conditions
@@ -282,34 +252,47 @@ String Weather::getWeatherDescription(int weatherCode) const {
   }
 }
 
-String Weather::getWeatherText() const { return weatherData; }
+GeocodingResult OpenMeteoAPI::getLocationByCity(const String& cityName, const String& countryCode) const {
+  GeocodingResult result;
 
-String Weather::getLastUpdateTime() const { return lastUpdateTime; }
+  HTTPClient http;
+  String url = String(geocodingEndpoint) + "?name=" + cityName + "&count=1&language=en&format=json";
 
-bool Weather::isTimeToUpdate(unsigned long currentMillis) const {
-  return (currentMillis - lastWeatherUpdate) >= updateInterval || lastWeatherUpdate == 0;
+  if (countryCode.length() > 0) {
+    url += "&countryCode=" + countryCode;
+  }
+
+  http.begin(url);
+  int httpCode = http.GET();
+
+  if (httpCode != HTTP_CODE_OK) {
+    Serial.println("Failed to get geocoding data");
+    http.end();
+    return result;
+  }
+
+  String payload = http.getString();
+  DynamicJsonDocument doc(4096);
+  DeserializationError error = deserializeJson(doc, payload);
+
+  if (error) {
+    Serial.print("Geocoding JSON parsing failed: ");
+    Serial.println(error.c_str());
+    http.end();
+    return result;
+  }
+
+  JsonArray results = doc["results"].as<JsonArray>();
+  if (results.size() > 0) {
+    JsonObject firstResult = results[0];
+
+    result.name = firstResult["name"].as<String>();
+    result.latitude = firstResult["latitude"].as<float>();
+    result.longitude = firstResult["longitude"].as<float>();
+    result.elevation = firstResult["elevation"].as<float>();
+    result.countryCode = firstResult["country_code"].as<String>();
+  }
+
+  http.end();
+  return result;
 }
-
-int Weather::getWindDirection() const { return windDirection; }
-
-std::vector<float> Weather::getHourlyTemperatures() const { return hourlyTemperatures; }
-
-std::vector<float> Weather::getHourlyWindSpeeds() const { return hourlyWindSpeeds; }
-
-std::vector<float> Weather::getHourlyWindGusts() const { return hourlyWindGusts; }
-
-std::vector<String> Weather::getHourlyTime() const { return hourlyTime; }
-
-std::vector<float> Weather::getHourlyPrecipitation() const { return hourlyPrecipitation; }
-
-std::vector<float> Weather::getHourlyCloudCoverage() const { return hourlyCloudCoverage; }
-
-float Weather::getCurrentTemperature() const { return currentTemperature; }
-
-float Weather::getCurrentWindSpeed() const { return currentWindSpeed; }
-
-float Weather::getCurrentWindGusts() const { return currentWindGusts; }
-
-String Weather::getWeatherDescription() const { return currentWeatherDescription; }
-
-String Weather::getLastPayload() const { return lastApiPayload; }

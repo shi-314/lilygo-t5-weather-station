@@ -6,9 +6,9 @@
 #include "battery.h"
 
 MeteogramWeatherScreen::MeteogramWeatherScreen(
-    GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display, Weather &weather)
+    GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> &display, const WeatherForecast &forecast)
     : display(display),
-      weather(weather),
+      forecast(forecast),
       primaryFont(u8g2_font_helvR18_tf),
       secondaryFont(u8g2_font_helvR12_tf),
       smallFont(u8g2_font_helvR08_tr) {
@@ -65,15 +65,14 @@ void MeteogramWeatherScreen::drawDottedLine(int x0, int y0, int x1, int y1, uint
 }
 
 void MeteogramWeatherScreen::render() {
-  Serial.println("Updating display...");
+  Serial.println("Displaying meteogram screen");
 
   display.init(115200);
   display.setRotation(1);
   display.fillScreen(GxEPD_WHITE);
 
   String batteryStatus = getBatteryStatus();
-  String windDisplay =
-      String(weather.getCurrentWindSpeed(), 1) + " - " + String(weather.getCurrentWindGusts(), 1) + " m/s";
+  String windDisplay = String(forecast.currentWindSpeed, 1) + " - " + String(forecast.currentWindGusts, 1) + " m/s";
 
   gfx.setFontMode(1);
   gfx.setFontDirection(0);
@@ -95,14 +94,14 @@ void MeteogramWeatherScreen::render() {
   gfx.setFont(primaryFont);
   gfx.setCursor(6, temp_y);
 
-  String temperatureDisplay = String(weather.getCurrentTemperature(), 1) + " °C";
+  String temperatureDisplay = String(forecast.currentTemperature, 1) + " °C";
   gfx.print(temperatureDisplay);
 
   int temp_width = gfx.getUTF8Width(temperatureDisplay.c_str());
 
   gfx.setFont(secondaryFont);
   gfx.setCursor(6 + temp_width + 8, temp_y);
-  gfx.print(" " + weather.getWeatherDescription());
+  gfx.print(" " + forecast.currentWeatherDescription);
 
   gfx.setCursor(6, wind_y);
   gfx.print(windDisplay);
@@ -125,38 +124,37 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   gfx.setForegroundColor(GxEPD_BLACK);
   gfx.setBackgroundColor(GxEPD_WHITE);
 
-  std::vector<float> temps = weather.getHourlyTemperatures();
-  std::vector<float> winds = weather.getHourlyWindSpeeds();
-  std::vector<float> windGusts = weather.getHourlyWindGusts();
-  std::vector<String> times = weather.getHourlyTime();
-  std::vector<float> precipitation = weather.getHourlyPrecipitation();
-  std::vector<float> cloudCoverage = weather.getHourlyCloudCoverage();
-
-  if (temps.empty() || winds.empty() || windGusts.empty() || times.empty() || precipitation.empty() ||
-      cloudCoverage.empty()) {
+  if (forecast.hourlyTemperatures.empty() || forecast.hourlyWindSpeeds.empty() || forecast.hourlyWindGusts.empty() ||
+      forecast.hourlyTime.empty() || forecast.hourlyPrecipitation.empty() || forecast.hourlyCloudCoverage.empty()) {
     gfx.setCursor(x_base, y_base + h / 2);
     gfx.print("No meteogram data.");
     return;
   }
 
-  int num_points = std::min({(int)temps.size(), (int)winds.size(), (int)windGusts.size(), (int)times.size(),
-                             (int)precipitation.size(), (int)cloudCoverage.size(), 24});
+  int num_points = std::min({(int)forecast.hourlyTemperatures.size(), (int)forecast.hourlyWindSpeeds.size(),
+                             (int)forecast.hourlyWindGusts.size(), (int)forecast.hourlyTime.size(),
+                             (int)forecast.hourlyPrecipitation.size(), (int)forecast.hourlyCloudCoverage.size(), 24});
   if (num_points <= 1) {
     display.setCursor(x_base, y_base + h / 2);
     display.print("Not enough data.");
     return;
   }
 
-  float min_temp = *std::min_element(temps.begin(), temps.begin() + num_points);
-  float max_temp = *std::max_element(temps.begin(), temps.begin() + num_points);
+  float min_temp =
+      *std::min_element(forecast.hourlyTemperatures.begin(), forecast.hourlyTemperatures.begin() + num_points);
+  float max_temp =
+      *std::max_element(forecast.hourlyTemperatures.begin(), forecast.hourlyTemperatures.begin() + num_points);
 
   std::vector<float> allWindData;
-  allWindData.insert(allWindData.end(), winds.begin(), winds.begin() + num_points);
-  allWindData.insert(allWindData.end(), windGusts.begin(), windGusts.begin() + num_points);
+  allWindData.insert(allWindData.end(), forecast.hourlyWindSpeeds.begin(),
+                     forecast.hourlyWindSpeeds.begin() + num_points);
+  allWindData.insert(allWindData.end(), forecast.hourlyWindGusts.begin(),
+                     forecast.hourlyWindGusts.begin() + num_points);
   float min_wind = *std::min_element(allWindData.begin(), allWindData.end());
   float max_wind = *std::max_element(allWindData.begin(), allWindData.end());
 
-  float max_precipitation = *std::max_element(precipitation.begin(), precipitation.begin() + num_points);
+  float max_precipitation =
+      *std::max_element(forecast.hourlyPrecipitation.begin(), forecast.hourlyPrecipitation.begin() + num_points);
 
   if (max_temp == min_temp) max_temp += 1.0f;
   if (max_wind == min_wind) max_wind += 1.0f;
@@ -193,7 +191,7 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
 
     // Get cloud coverage color based on percentage
     uint16_t cloudColor;
-    float coverage = cloudCoverage[i];
+    float coverage = forecast.hourlyCloudCoverage[i];
     if (coverage < 25.0f) {
       cloudColor = GxEPD_WHITE;
     } else if (coverage < 50.0f) {
@@ -213,10 +211,10 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
 
   for (int i = 0; i < num_points; ++i) {
-    if (precipitation[i] > 0.0f) {
+    if (forecast.hourlyPrecipitation[i] > 0.0f) {
       int x_center = plot_x + round(i * x_step);
       int bar_width = max(1, (int)(x_step * 0.6f));
-      int bar_height = round((precipitation[i] / max_precipitation) * plot_h);
+      int bar_height = round((forecast.hourlyPrecipitation[i] / max_precipitation) * plot_h);
 
       int bar_x = x_center - bar_width / 2;
       int bar_y = plot_y + plot_h - bar_height;
@@ -248,14 +246,18 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
     int x1 = plot_x + round(i * x_step);
     int x2 = plot_x + round((i + 1) * x_step);
 
-    int y1_temp = plot_y + plot_h - round(((temps[i] - min_temp) / (max_temp - min_temp)) * plot_h);
-    int y2_temp = plot_y + plot_h - round(((temps[i + 1] - min_temp) / (max_temp - min_temp)) * plot_h);
+    int y1_temp =
+        plot_y + plot_h - round(((forecast.hourlyTemperatures[i] - min_temp) / (max_temp - min_temp)) * plot_h);
+    int y2_temp =
+        plot_y + plot_h - round(((forecast.hourlyTemperatures[i + 1] - min_temp) / (max_temp - min_temp)) * plot_h);
 
-    int y1_wind = plot_y + plot_h - round(((winds[i] - min_wind) / (max_wind - min_wind)) * plot_h);
-    int y2_wind = plot_y + plot_h - round(((winds[i + 1] - min_wind) / (max_wind - min_wind)) * plot_h);
+    int y1_wind = plot_y + plot_h - round(((forecast.hourlyWindSpeeds[i] - min_wind) / (max_wind - min_wind)) * plot_h);
+    int y2_wind =
+        plot_y + plot_h - round(((forecast.hourlyWindSpeeds[i + 1] - min_wind) / (max_wind - min_wind)) * plot_h);
 
-    int y1_gust = plot_y + plot_h - round(((windGusts[i] - min_wind) / (max_wind - min_wind)) * plot_h);
-    int y2_gust = plot_y + plot_h - round(((windGusts[i + 1] - min_wind) / (max_wind - min_wind)) * plot_h);
+    int y1_gust = plot_y + plot_h - round(((forecast.hourlyWindGusts[i] - min_wind) / (max_wind - min_wind)) * plot_h);
+    int y2_gust =
+        plot_y + plot_h - round(((forecast.hourlyWindGusts[i + 1] - min_wind) / (max_wind - min_wind)) * plot_h);
 
     display.drawLine(x1, constrain(y1_temp, plot_y, plot_y + plot_h), x2, constrain(y2_temp, plot_y, plot_y + plot_h),
                      GxEPD_BLACK);
@@ -265,13 +267,13 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
                    GxEPD_DARKGREY);
   }
 
-  String lastUpdateStr = weather.getLastUpdateTime();
+  String lastUpdateStr = forecast.lastUpdateTime;
   int lastUpdateMinutes = parseHHMMtoMinutes(lastUpdateStr);
   int final_line_x = -1;
 
   if (lastUpdateMinutes != -1 && num_points > 1) {
     for (int i = 0; i < num_points; ++i) {
-      int currentMinutes = parseHHMMtoMinutes(times[i]);
+      int currentMinutes = parseHHMMtoMinutes(forecast.hourlyTime[i]);
       if (currentMinutes == -1) continue;
 
       if (lastUpdateMinutes == currentMinutes) {
@@ -280,7 +282,7 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
       }
 
       if (i < num_points - 1) {
-        int nextMinutes = parseHHMMtoMinutes(times[i + 1]);
+        int nextMinutes = parseHHMMtoMinutes(forecast.hourlyTime[i + 1]);
         if (nextMinutes != -1 && lastUpdateMinutes > currentMinutes && lastUpdateMinutes < nextMinutes) {
           float fraction = (float)(lastUpdateMinutes - currentMinutes) / (nextMinutes - currentMinutes);
           final_line_x = plot_x + round((i + fraction) * x_step);

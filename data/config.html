@@ -82,8 +82,30 @@
             transition: all 0.2s ease;
         }
 
+        select {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            background-color: #ffffff;
+            color: #1f2937;
+            min-height: 52px;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 48px;
+        }
+
         input[type="text"]:focus,
-        input[type="password"]:focus {
+        input[type="password"]:focus,
+        select:focus {
             border-color: #3b82f6;
             outline: none;
             background-color: #ffffff;
@@ -236,6 +258,12 @@
                 min-height: 50px;
             }
 
+            select {
+                padding: 15px;
+                min-height: 50px;
+                padding-right: 45px;
+            }
+
             .btn {
                 padding: 16px 20px;
                 min-height: 50px;
@@ -293,8 +321,19 @@
                 color: #f1f5f9;
             }
 
+            select {
+                background-color: rgba(51, 65, 85, 0.5);
+                border-color: #475569;
+                color: #f1f5f9;
+            }
+
             input[type="text"]:focus,
             input[type="password"]:focus {
+                border-color: #60a5fa;
+                background-color: rgba(51, 65, 85, 0.7);
+            }
+
+            select:focus {
                 border-color: #60a5fa;
                 background-color: rgba(51, 65, 85, 0.7);
             }
@@ -334,6 +373,20 @@
                 <label for="password">WiFi Password</label>
                 <input type="text" id="password" name="password" required placeholder="Enter password"
                     value="{{CURRENT_PASSWORD}}" autocomplete="off" autocapitalize="none" autocorrect="off">
+            </div>
+
+            <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" placeholder="Enter city name (e.g., Berlin)"
+                    value="{{CURRENT_CITY}}" autocomplete="off" autocapitalize="none" autocorrect="off">
+            </div>
+
+            <div class="form-group">
+                <label for="countryCode">Country Code <span class="optional-label">(optional, e.g., US, DE,
+                        FR)</span></label>
+                <input type="text" id="countryCode" name="countryCode" placeholder="Enter 2-letter country code"
+                    value="{{CURRENT_COUNTRY_CODE}}" autocomplete="off" autocapitalize="none" autocorrect="off"
+                    maxlength="2" style="text-transform: uppercase;">
             </div>
 
             <div class="ai-toggle-section">
@@ -393,6 +446,8 @@
             const password = document.getElementById('password').value;
             const openaiApiKey = document.getElementById('openaiApiKey').value;
             const aiPromptStyle = document.getElementById('aiPromptStyle').value;
+            const city = document.getElementById('city').value;
+            const countryCode = document.getElementById('countryCode').value;
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
@@ -406,6 +461,8 @@
                 formData.append('password', password);
                 formData.append('openaiApiKey', openaiApiKey);
                 formData.append('aiPromptStyle', aiPromptStyle);
+                formData.append('city', city);
+                formData.append('countryCode', countryCode.toUpperCase());
 
                 const response = await fetch('/save', {
                     method: 'POST',

@@ -132,6 +132,14 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
       config.aiPromptStyle = request->getParam("aiPromptStyle", true)->value();
     }
 
+    if (request->hasParam("city", true)) {
+      config.city = request->getParam("city", true)->value();
+    }
+
+    if (request->hasParam("countryCode", true)) {
+      config.countryCode = request->getParam("countryCode", true)->value();
+    }
+
     Serial.println("Configuration received");
     request->send(200, "text/plain", "OK");
 
@@ -169,6 +177,8 @@ String ConfigurationServer::getConfigurationPage() {
   html.replace("{{CURRENT_PASSWORD}}", currentConfiguration.password);
   html.replace("{{CURRENT_OPENAI_KEY}}", currentConfiguration.openaiApiKey);
   html.replace("{{CURRENT_AI_PROMPT_STYLE}}", currentConfiguration.aiPromptStyle);
+  html.replace("{{CURRENT_CITY}}", currentConfiguration.city);
+  html.replace("{{CURRENT_COUNTRY_CODE}}", currentConfiguration.countryCode);
   return html;
 }
 

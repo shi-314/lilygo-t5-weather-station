@@ -10,7 +10,7 @@ MessageScreen::MessageScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDE
 void MessageScreen::setMessageText(const String& text) { messageText = text; }
 
 void MessageScreen::render() {
-  Serial.println("Displaying message...");
+  Serial.println("Displaying AI message screen");
 
   display.init(115200);
   display.setRotation(1);
