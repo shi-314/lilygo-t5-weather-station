@@ -9,11 +9,23 @@
 
 #include <functional>
 
-using OnSaveCallback = std::function<void(const String &ssid, const String &password, const String &openaiApiKey)>;
+struct Configuration {
+  String ssid;
+  String password;
+  String openaiApiKey;
+  String aiPromptStyle;
+
+  Configuration() = default;
+
+  Configuration(const String &ssid, const String &password, const String &openaiApiKey, const String &aiPromptStyle)
+      : ssid(ssid), password(password), openaiApiKey(openaiApiKey), aiPromptStyle(aiPromptStyle) {}
+};
+
+using OnSaveCallback = std::function<void(const Configuration &config)>;
 
 class ConfigurationServer {
  public:
-  ConfigurationServer(const char *currentSSID, const char *currentPassword, const char *currentOpenaiKey);
+  ConfigurationServer(const Configuration &currentConfig);
   void run(OnSaveCallback onSaveCallback);
   void stop();
   bool isRunning() const;
@@ -27,9 +39,7 @@ class ConfigurationServer {
   String wifiAccessPointName;
   String wifiAccessPointPassword;
 
-  const char *currentWifiSSID;
-  const char *currentWifiPassword;
-  const char *currentOpenaiApiKey;
+  Configuration currentConfiguration;
 
   AsyncWebServer *server;
   DNSServer *dnsServer;
