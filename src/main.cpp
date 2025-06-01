@@ -75,7 +75,6 @@ void cycleToNextScreen() {
 void displayCurrentScreen() {
   switch (currentScreenIndex) {
     case CONFIG_SCREEN: {
-      Serial.println("Displaying configuration screen");
       ConfigurationScreen configurationScreen(display, configurationServer.getWifiAccessPointName(),
                                               configurationServer.getWifiAccessPointPassword());
       configurationScreen.render();
@@ -100,23 +99,20 @@ void displayCurrentScreen() {
       break;
     }
     case METEOGRAM_SCREEN: {
-      Serial.println("Displaying meteogram screen");
-      openMeteoAPI.update();
-      MeteogramWeatherScreen meteogramWeatherScreen(display, openMeteoAPI);
+      WeatherForecastToday forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
       break;
     }
     case MESSAGE_SCREEN: {
-      Serial.println("Displaying message screen");
-      openMeteoAPI.update();
+      WeatherForecastToday forecastData = openMeteoAPI.getForecast(latitude, longitude);
 
       String prompt = aiWeatherPrompt;
       prompt += "- Use the following style: " + String(aiPromptStyle) + "\n";
-      prompt += openMeteoAPI.getLastPayload();
+      prompt += forecastData.apiPayload;
 
       ChatGPTClient chatGPTClient(openaiApiKey);
       String chatGPTResponse = chatGPTClient.generateContent(prompt);
-      Serial.println("ChatGPT Response: " + chatGPTResponse);
 
       MessageScreen messageScreen(display);
       messageScreen.setMessageText(chatGPTResponse);
@@ -126,8 +122,8 @@ void displayCurrentScreen() {
     default: {
       Serial.println("Unknown screen index, defaulting to meteogram");
       currentScreenIndex = METEOGRAM_SCREEN;
-      openMeteoAPI.update();
-      MeteogramWeatherScreen meteogramWeatherScreen(display, openMeteoAPI);
+      WeatherForecastToday forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
       break;
     }
