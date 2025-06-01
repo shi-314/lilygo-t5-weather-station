@@ -256,19 +256,19 @@ void goToSleep(uint64_t sleepTime) {
 void initializeDefaultConfig() {
   if (configInitialized) return;
 
+  memset(wifiSSID, 0, sizeof(wifiSSID));
+  memset(wifiPassword, 0, sizeof(wifiPassword));
+  memset(openaiApiKey, 0, sizeof(openaiApiKey));
+  memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
+  memset(city, 0, sizeof(city));
+  memset(countryCode, 0, sizeof(countryCode));
+
   strncpy(wifiSSID, DEFAULT_WIFI_SSID, sizeof(wifiSSID) - 1);
   strncpy(wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(wifiPassword) - 1);
   strncpy(openaiApiKey, DEFAULT_OPENAI_API_KEY, sizeof(openaiApiKey) - 1);
   strncpy(aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(aiPromptStyle) - 1);
   strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
   strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
-
-  wifiSSID[sizeof(wifiSSID) - 1] = '\0';
-  wifiPassword[sizeof(wifiPassword) - 1] = '\0';
-  openaiApiKey[sizeof(openaiApiKey) - 1] = '\0';
-  aiPromptStyle[sizeof(aiPromptStyle) - 1] = '\0';
-  city[sizeof(city) - 1] = '\0';
-  countryCode[sizeof(countryCode) - 1] = '\0';
 
   configInitialized = true;
 }
