@@ -14,6 +14,27 @@ struct GeocodingResult {
   String countryCode;
 };
 
+struct WeatherForecastToday {
+  String lastUpdateTime;
+
+  float currentTemperature;
+  float currentWindSpeed;
+  float currentWindGusts;
+  int currentWindDirection;
+  String currentWeatherDescription;
+  int currentWeatherCode;
+  String currentWeatherCodeDescription;
+
+  std::vector<float> hourlyTemperatures;
+  std::vector<float> hourlyWindSpeeds;
+  std::vector<float> hourlyWindGusts;
+  std::vector<String> hourlyTime;
+  std::vector<float> hourlyPrecipitation;
+  std::vector<float> hourlyCloudCoverage;
+
+  String apiPayload;
+};
+
 class OpenMeteoAPI {
  public:
   OpenMeteoAPI(float latitude, float longitude);
