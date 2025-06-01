@@ -74,6 +74,10 @@ void geocodeCurrentLocation() {
   if (location.name.length() > 0) {
     latitude = location.latitude;
     longitude = location.longitude;
+
+    strncpy(city, location.name.c_str(), sizeof(city) - 1);
+    strncpy(countryCode, location.countryCode.c_str(), sizeof(countryCode) - 1);
+
     Serial.printf("Geocoded successfully: %s -> (%f, %f)\n", city, latitude, longitude);
   } else {
     Serial.printf("Geocoding failed for %s, using default coordinates\n", city);
