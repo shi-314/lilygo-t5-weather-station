@@ -21,7 +21,6 @@ class OpenMeteoAPI {
   void update();
   String getWeatherText() const;
   String getLastUpdateTime() const;
-  bool isTimeToUpdate(unsigned long currentMillis) const;
   int getWindDirection() const;
   std::vector<float> getHourlyTemperatures() const;
   std::vector<float> getHourlyWindSpeeds() const;
@@ -48,8 +47,6 @@ class OpenMeteoAPI {
   // Weather data
   String weatherData = "Loading...";
   String lastUpdateTime = "";
-  unsigned long lastWeatherUpdate = 0;
-  const unsigned long updateInterval = 300000;  // Update weather every 5 minutes
   int windDirection = 0;
 
   float currentTemperature = 0.0;

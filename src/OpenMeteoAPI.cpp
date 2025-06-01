@@ -116,8 +116,6 @@ void OpenMeteoAPI::update() {
   strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
   lastUpdateTime = String(timeBuffer);
 
-  lastWeatherUpdate = millis();
-
   http.end();
 }
 
@@ -285,10 +283,6 @@ String OpenMeteoAPI::getWeatherDescription(int weatherCode) const {
 String OpenMeteoAPI::getWeatherText() const { return weatherData; }
 
 String OpenMeteoAPI::getLastUpdateTime() const { return lastUpdateTime; }
-
-bool OpenMeteoAPI::isTimeToUpdate(unsigned long currentMillis) const {
-  return (currentMillis - lastWeatherUpdate) >= updateInterval || lastWeatherUpdate == 0;
-}
 
 int OpenMeteoAPI::getWindDirection() const { return windDirection; }
 
