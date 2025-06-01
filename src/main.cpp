@@ -40,7 +40,7 @@ const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microsec
 
 Weather weather(latitude, longitude);
 MeteogramWeatherScreen weatherScreen(display, weather);
-ConfigurationServer configurationServer(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle);
+ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle));
 
 enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
 
@@ -50,8 +50,7 @@ void goToSleep(uint64_t sleepTime);
 void displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
-void updateConfiguration(const String& newSSID, const String& newPassword, const String& newOpenaiKey,
-                         const String& newAiPromptStyle);
+void updateConfiguration(const Configuration& config);
 bool hasValidOpenaiApiKey();
 
 bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
@@ -82,10 +81,7 @@ void displayCurrentScreen() {
                                               configurationServer.getWifiAccessPointPassword());
       configurationScreen.render();
 
-      configurationServer.run(
-          [](const String& ssid, const String& password, const String& openaiKey, const String& aiPromptStyle) {
-            updateConfiguration(ssid, password, openaiKey, aiPromptStyle);
-          });
+      configurationServer.run(updateConfiguration);
 
       while (configurationServer.isRunning()) {
         configurationServer.handleRequests();
@@ -135,24 +131,23 @@ void displayCurrentScreen() {
   }
 }
 
-void updateConfiguration(const String& newSSID, const String& newPassword, const String& newOpenaiKey,
-                         const String& newAiPromptStyle) {
-  if (newSSID.length() >= sizeof(wifiSSID)) {
+void updateConfiguration(const Configuration& config) {
+  if (config.ssid.length() >= sizeof(wifiSSID)) {
     Serial.println("Error: SSID too long, maximum length is " + String(sizeof(wifiSSID) - 1));
     return;
   }
 
-  if (newPassword.length() >= sizeof(wifiPassword)) {
+  if (config.password.length() >= sizeof(wifiPassword)) {
     Serial.println("Error: Password too long, maximum length is " + String(sizeof(wifiPassword) - 1));
     return;
   }
 
-  if (newOpenaiKey.length() >= sizeof(openaiApiKey)) {
+  if (config.openaiApiKey.length() >= sizeof(openaiApiKey)) {
     Serial.println("Error: OpenAI API key too long, maximum length is " + String(sizeof(openaiApiKey) - 1));
     return;
   }
 
-  if (newAiPromptStyle.length() >= sizeof(aiPromptStyle)) {
+  if (config.aiPromptStyle.length() >= sizeof(aiPromptStyle)) {
     Serial.println("Error: AI Prompt Style too long, maximum length is " + String(sizeof(aiPromptStyle) - 1));
     return;
   }
@@ -162,10 +157,10 @@ void updateConfiguration(const String& newSSID, const String& newPassword, const
   memset(openaiApiKey, 0, sizeof(openaiApiKey));
   memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
 
-  strncpy(wifiSSID, newSSID.c_str(), sizeof(wifiSSID) - 1);
-  strncpy(wifiPassword, newPassword.c_str(), sizeof(wifiPassword) - 1);
-  strncpy(openaiApiKey, newOpenaiKey.c_str(), sizeof(openaiApiKey) - 1);
-  strncpy(aiPromptStyle, newAiPromptStyle.c_str(), sizeof(aiPromptStyle) - 1);
+  strncpy(wifiSSID, config.ssid.c_str(), sizeof(wifiSSID) - 1);
+  strncpy(wifiPassword, config.password.c_str(), sizeof(wifiPassword) - 1);
+  strncpy(openaiApiKey, config.openaiApiKey.c_str(), sizeof(openaiApiKey) - 1);
+  strncpy(aiPromptStyle, config.aiPromptStyle.c_str(), sizeof(aiPromptStyle) - 1);
 
   Serial.println("Configuration updated in RTC memory");
   Serial.println("WiFi SSID: " + String(wifiSSID));

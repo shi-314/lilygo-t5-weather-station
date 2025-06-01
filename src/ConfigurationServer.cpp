@@ -4,15 +4,11 @@
 #include <WiFi.h>
 #include <WiFiAP.h>
 
-ConfigurationServer::ConfigurationServer(const char *currentSSID, const char *currentPassword,
-                                         const char *currentOpenaiKey, const char *currentAiPromptStyle)
+ConfigurationServer::ConfigurationServer(const Configuration &currentConfig)
     : deviceName("LilyGo-Weather-Station"),
       wifiAccessPointName("WeatherStation-Config"),
       wifiAccessPointPassword("configure123"),
-      currentWifiSSID(currentSSID),
-      currentWifiPassword(currentPassword),
-      currentOpenaiApiKey(currentOpenaiKey),
-      currentAiPromptStyle(currentAiPromptStyle),
+      currentConfiguration(currentConfig),
       server(nullptr),
       dnsServer(nullptr),
       isServerRunning(false) {}
@@ -124,32 +120,22 @@ void ConfigurationServer::handleRoot(AsyncWebServerRequest *request) {
 
 void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
   if (request->hasParam("ssid", true) && request->hasParam("password", true)) {
-    String ssid = request->getParam("ssid", true)->value();
-    String password = request->getParam("password", true)->value();
-    String openaiApiKey = "";
-    String aiPromptStyle = "";
+    Configuration config;
+    config.ssid = request->getParam("ssid", true)->value();
+    config.password = request->getParam("password", true)->value();
 
     if (request->hasParam("openaiApiKey", true)) {
-      openaiApiKey = request->getParam("openaiApiKey", true)->value();
+      config.openaiApiKey = request->getParam("openaiApiKey", true)->value();
     }
 
     if (request->hasParam("aiPromptStyle", true)) {
-      aiPromptStyle = request->getParam("aiPromptStyle", true)->value();
+      config.aiPromptStyle = request->getParam("aiPromptStyle", true)->value();
     }
 
-    Serial.println("Configuration received:");
-    Serial.print("SSID: ");
-    Serial.println(ssid);
-    Serial.print("Password: ");
-    Serial.println(password);
-    Serial.print("OpenAI API Key: ");
-    Serial.println(openaiApiKey.length() > 0 ? "[CONFIGURED]" : "[NOT SET]");
-    Serial.print("AI Prompt Style: ");
-    Serial.println(aiPromptStyle.length() > 0 ? aiPromptStyle : "[NOT SET]");
-
+    Serial.println("Configuration received");
     request->send(200, "text/plain", "OK");
 
-    onSaveCallback(ssid, password, openaiApiKey, aiPromptStyle);
+    onSaveCallback(config);
   } else {
     request->send(400, "text/plain", "Missing parameters");
   }
@@ -179,10 +165,10 @@ bool ConfigurationServer::loadHtmlTemplate() {
 
 String ConfigurationServer::getConfigurationPage() {
   String html = htmlTemplate;
-  html.replace("{{CURRENT_SSID}}", String(currentWifiSSID));
-  html.replace("{{CURRENT_PASSWORD}}", String(currentWifiPassword));
-  html.replace("{{CURRENT_OPENAI_KEY}}", String(currentOpenaiApiKey));
-  html.replace("{{CURRENT_AI_PROMPT_STYLE}}", String(currentAiPromptStyle));
+  html.replace("{{CURRENT_SSID}}", currentConfiguration.ssid);
+  html.replace("{{CURRENT_PASSWORD}}", currentConfiguration.password);
+  html.replace("{{CURRENT_OPENAI_KEY}}", currentConfiguration.openaiApiKey);
+  html.replace("{{CURRENT_AI_PROMPT_STYLE}}", currentConfiguration.aiPromptStyle);
   return html;
 }
 
