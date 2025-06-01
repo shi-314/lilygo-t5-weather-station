@@ -22,10 +22,7 @@ A weather station for LilyGO T5 e-paper displays that shows current weather, for
 
 1. Install PlatformIO
 2. Clone this repository
-3. Build and upload:
-   ```bash
-   pio run --target upload
-   ```
+3. Build and upload
 
 ## Configuration
 
