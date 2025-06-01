@@ -157,6 +157,60 @@
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
+        .ai-toggle-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .ai-toggle-btn {
+            background: transparent;
+            border: 2px solid #e5e7eb;
+            color: #6b7280;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            letter-spacing: 0.025em;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 0 auto;
+        }
+
+        .ai-toggle-btn:hover {
+            border-color: #d1d5db;
+            color: #374151;
+        }
+
+        .ai-toggle-btn:active {
+            transform: translateY(1px);
+        }
+
+        .ai-config-section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .ai-config-section.show {
+            display: block;
+            opacity: 1;
+        }
+
+        #aiToggleIcon {
+            transition: transform 0.2s ease;
+            font-size: 12px;
+        }
+
+        #aiToggleIcon.rotated {
+            transform: rotate(90deg);
+        }
+
         /* Mobile-specific improvements */
         @media (max-width: 480px) {
             body {
@@ -249,6 +303,16 @@
             input[type="password"]::placeholder {
                 color: #64748b;
             }
+
+            .ai-toggle-btn {
+                border-color: #475569;
+                color: #94a3b8;
+            }
+
+            .ai-toggle-btn:hover {
+                border-color: #64748b;
+                color: #cbd5e1;
+            }
         }
     </style>
 </head>
@@ -272,10 +336,25 @@
                     value="{{CURRENT_PASSWORD}}" autocomplete="off" autocapitalize="none" autocorrect="off">
             </div>
 
-            <div class="form-group">
-                <label for="openaiApiKey">OpenAI API Key <span class="optional-label">(optional)</span></label>
-                <input type="text" id="openaiApiKey" name="openaiApiKey" placeholder="(for AI weather forecast)"
-                    value="{{CURRENT_OPENAI_KEY}}" autocomplete="off" autocapitalize="none" autocorrect="off">
+            <div class="ai-toggle-section">
+                <button type="button" class="ai-toggle-btn" id="aiToggleBtn">
+                    <span id="aiToggleIcon">▶</span> Configure AI Features (Optional)
+                </button>
+            </div>
+
+            <div class="ai-config-section" id="aiConfigSection">
+                <div class="form-group">
+                    <label for="openaiApiKey">OpenAI API Key <span class="optional-label">(optional)</span></label>
+                    <input type="text" id="openaiApiKey" name="openaiApiKey" placeholder="(for AI weather forecast)"
+                        value="{{CURRENT_OPENAI_KEY}}" autocomplete="off" autocapitalize="none" autocorrect="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="aiPromptStyle">AI Prompt Style <span class="optional-label">(optional)</span></label>
+                    <input type="text" id="aiPromptStyle" name="aiPromptStyle"
+                        placeholder="(neutral, funny, sarcastic, etc.)" value="{{CURRENT_AI_PROMPT_STYLE}}"
+                        autocomplete="off" autocapitalize="none" autocorrect="off">
+                </div>
             </div>
 
             <button type="submit" class="btn" id="submitBtn">Save Configuration</button>
@@ -286,6 +365,25 @@
         // Prevent zoom on iOS when focusing inputs
         document.addEventListener('touchstart', function () { }, { passive: true });
 
+        // Handle AI configuration toggle
+        document.getElementById('aiToggleBtn').addEventListener('click', function () {
+            const aiSection = document.getElementById('aiConfigSection');
+            const toggleIcon = document.getElementById('aiToggleIcon');
+            const isVisible = aiSection.classList.contains('show');
+
+            if (isVisible) {
+                aiSection.classList.remove('show');
+                toggleIcon.classList.remove('rotated');
+                toggleIcon.textContent = '▶';
+                this.innerHTML = '<span id="aiToggleIcon">▶</span> Configure AI Features (Optional)';
+            } else {
+                aiSection.classList.add('show');
+                toggleIcon.classList.add('rotated');
+                toggleIcon.textContent = '▼';
+                this.innerHTML = '<span id="aiToggleIcon" class="rotated">▼</span> Hide AI Features';
+            }
+        });
+
         document.getElementById('configForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
@@ -294,6 +392,7 @@
             const ssid = document.getElementById('ssid').value;
             const password = document.getElementById('password').value;
             const openaiApiKey = document.getElementById('openaiApiKey').value;
+            const aiPromptStyle = document.getElementById('aiPromptStyle').value;
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
@@ -306,6 +405,7 @@
                 formData.append('ssid', ssid);
                 formData.append('password', password);
                 formData.append('openaiApiKey', openaiApiKey);
+                formData.append('aiPromptStyle', aiPromptStyle);
 
                 const response = await fetch('/save', {
                     method: 'POST',

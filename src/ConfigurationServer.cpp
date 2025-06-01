@@ -5,13 +5,14 @@
 #include <WiFiAP.h>
 
 ConfigurationServer::ConfigurationServer(const char *currentSSID, const char *currentPassword,
-                                         const char *currentOpenaiKey)
+                                         const char *currentOpenaiKey, const char *currentAiPromptStyle)
     : deviceName("LilyGo-Weather-Station"),
       wifiAccessPointName("WeatherStation-Config"),
       wifiAccessPointPassword("configure123"),
       currentWifiSSID(currentSSID),
       currentWifiPassword(currentPassword),
       currentOpenaiApiKey(currentOpenaiKey),
+      currentAiPromptStyle(currentAiPromptStyle),
       server(nullptr),
       dnsServer(nullptr),
       isServerRunning(false) {}
@@ -126,9 +127,14 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
     String ssid = request->getParam("ssid", true)->value();
     String password = request->getParam("password", true)->value();
     String openaiApiKey = "";
+    String aiPromptStyle = "";
 
     if (request->hasParam("openaiApiKey", true)) {
       openaiApiKey = request->getParam("openaiApiKey", true)->value();
+    }
+
+    if (request->hasParam("aiPromptStyle", true)) {
+      aiPromptStyle = request->getParam("aiPromptStyle", true)->value();
     }
 
     Serial.println("Configuration received:");
@@ -138,10 +144,12 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
     Serial.println(password);
     Serial.print("OpenAI API Key: ");
     Serial.println(openaiApiKey.length() > 0 ? "[CONFIGURED]" : "[NOT SET]");
+    Serial.print("AI Prompt Style: ");
+    Serial.println(aiPromptStyle.length() > 0 ? aiPromptStyle : "[NOT SET]");
 
     request->send(200, "text/plain", "OK");
 
-    onSaveCallback(ssid, password, openaiApiKey);
+    onSaveCallback(ssid, password, openaiApiKey, aiPromptStyle);
   } else {
     request->send(400, "text/plain", "Missing parameters");
   }
@@ -174,6 +182,7 @@ String ConfigurationServer::getConfigurationPage() {
   html.replace("{{CURRENT_SSID}}", String(currentWifiSSID));
   html.replace("{{CURRENT_PASSWORD}}", String(currentWifiPassword));
   html.replace("{{CURRENT_OPENAI_KEY}}", String(currentOpenaiApiKey));
+  html.replace("{{CURRENT_AI_PROMPT_STYLE}}", String(currentAiPromptStyle));
   return html;
 }
 
