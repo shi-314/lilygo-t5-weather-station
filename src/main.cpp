@@ -49,6 +49,8 @@ GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
     GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
+const unsigned long aiMessageDeepSleepMicros =
+    3600000000;  // Deep sleep time for AI message screen in microseconds (1 hour)
 
 OpenMeteoAPI openMeteoAPI;
 ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle, city,
@@ -313,7 +315,9 @@ void setup() {
   displayCurrentScreen();
 
   if (currentScreenIndex == CONFIG_SCREEN) {
-    goToSleep(1000000);  // 1 second
+    goToSleep(100000);
+  } else if (currentScreenIndex == MESSAGE_SCREEN) {
+    goToSleep(aiMessageDeepSleepMicros);
   } else {
     goToSleep(deepSleepMicros);
   }
