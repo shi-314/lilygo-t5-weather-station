@@ -19,8 +19,8 @@ A weather station for LilyGO T5 e-paper displays that shows current weather, for
 
 - [LilyGO T5 v2.13 e-paper display board](https://lilygo.cc/en-pl/products/t5-v2-3-1?variant=42366871666869)
 - [Case](https://www.thingiverse.com/thing:4670205/files)
-- LiPo battery: I used a 3.7V 500mAh LiPo battery
-- WiFi connection
+- LiPo battery: 3.7V 500mAh recommended (fits in case, ~1 month battery life)
+- WiFi network for initial configuration and weather data updates
 - Mobile phone to connect to the device and configure it
 
 ## Setup
