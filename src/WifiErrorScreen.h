@@ -2,6 +2,7 @@
 #define WIFI_ERROR_SCREEN_H
 
 #include <GxEPD2_4G_4G.h>
+#include <U8g2_for_Adafruit_GFX.h>
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
 
 #include "Screen.h"
@@ -9,6 +10,7 @@
 class WifiErrorScreen : public Screen {
  private:
   GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
+  U8G2_FOR_ADAFRUIT_GFX gfx;
 
  public:
   WifiErrorScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display);
