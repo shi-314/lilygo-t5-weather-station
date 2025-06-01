@@ -57,6 +57,7 @@ class OpenMeteoAPI {
   String getLastPayload() const;
 
   GeocodingResult getLocationByCity(const String& cityName, const String& countryCode = "") const;
+  WeatherForecastToday getForecast(float latitude, float longitude) const;
 
  private:
   // API settings
