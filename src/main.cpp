@@ -6,6 +6,7 @@
 #include "ChatGPTClient.h"
 #include "ConfigurationScreen.h"
 #include "ConfigurationServer.h"
+#include "CurrentWeatherScreen.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
 #include "OpenMeteoAPI.h"
@@ -14,12 +15,20 @@
 #include "battery.h"
 #include "boards.h"
 
-RTC_DATA_ATTR char wifiSSID[64] = "";
-RTC_DATA_ATTR char wifiPassword[64] = "";
-RTC_DATA_ATTR char openaiApiKey[200] = "";
-RTC_DATA_ATTR char aiPromptStyle[200] = "neutral";
-RTC_DATA_ATTR char city[100] = "Berlin";
-RTC_DATA_ATTR char countryCode[3] = "DE";
+// Include development config if available, otherwise use default config
+#if __has_include("config_dev.h")
+#include "config_dev.h"
+#else
+#include "config_default.h"
+#endif
+
+RTC_DATA_ATTR char wifiSSID[64];
+RTC_DATA_ATTR char wifiPassword[64];
+RTC_DATA_ATTR char openaiApiKey[200];
+RTC_DATA_ATTR char aiPromptStyle[200];
+RTC_DATA_ATTR char city[100];
+RTC_DATA_ATTR char countryCode[3];
+RTC_DATA_ATTR bool configInitialized = false;
 RTC_DATA_ATTR float latitude = NAN;
 RTC_DATA_ATTR float longitude = NAN;
 
@@ -45,9 +54,15 @@ OpenMeteoAPI openMeteoAPI;
 ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle, city,
                                                       countryCode));
 
-enum ScreenType { CONFIG_SCREEN = 0, METEOGRAM_SCREEN = 1, MESSAGE_SCREEN = 2, SCREEN_COUNT = 3 };
+enum ScreenType {
+  CONFIG_SCREEN = 0,
+  CURRENT_WEATHER_SCREEN = 1,
+  METEOGRAM_SCREEN = 2,
+  MESSAGE_SCREEN = 3,
+  SCREEN_COUNT = 4
+};
 
-RTC_DATA_ATTR int currentScreenIndex = METEOGRAM_SCREEN;
+RTC_DATA_ATTR int currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
 void goToSleep(uint64_t sleepTime);
 void displayCurrentScreen();
@@ -55,6 +70,7 @@ void cycleToNextScreen();
 bool isButtonWakeup();
 void updateConfiguration(const Configuration& config);
 bool hasValidOpenaiApiKey();
+void initializeDefaultConfig();
 
 bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
 
@@ -128,6 +144,12 @@ void displayCurrentScreen() {
       configurationServer.stop();
       break;
     }
+    case CURRENT_WEATHER_SCREEN: {
+      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(city), String(countryCode));
+      currentWeatherScreen.render();
+      break;
+    }
     case METEOGRAM_SCREEN: {
       WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
@@ -150,12 +172,12 @@ void displayCurrentScreen() {
       break;
     }
     default: {
-      Serial.println("Unknown screen index, defaulting to meteogram");
-      currentScreenIndex = METEOGRAM_SCREEN;
+      Serial.println("Unknown screen index, defaulting to current weather");
+      currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
       WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
-      MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
-      meteogramWeatherScreen.render();
+      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(city), String(countryCode));
+      currentWeatherScreen.render();
       break;
     }
   }
@@ -231,8 +253,30 @@ void goToSleep(uint64_t sleepTime) {
   esp_deep_sleep_start();
 }
 
+void initializeDefaultConfig() {
+  if (configInitialized) return;
+
+  memset(wifiSSID, 0, sizeof(wifiSSID));
+  memset(wifiPassword, 0, sizeof(wifiPassword));
+  memset(openaiApiKey, 0, sizeof(openaiApiKey));
+  memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
+  memset(city, 0, sizeof(city));
+  memset(countryCode, 0, sizeof(countryCode));
+
+  strncpy(wifiSSID, DEFAULT_WIFI_SSID, sizeof(wifiSSID) - 1);
+  strncpy(wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(wifiPassword) - 1);
+  strncpy(openaiApiKey, DEFAULT_OPENAI_API_KEY, sizeof(openaiApiKey) - 1);
+  strncpy(aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(aiPromptStyle) - 1);
+  strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
+  strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
+
+  configInitialized = true;
+}
+
 void setup() {
   Serial.begin(115200);
+
+  initializeDefaultConfig();
 
   pinMode(BATTERY_PIN, INPUT);
   pinMode(BUTTON_1, INPUT_PULLUP);
@@ -242,7 +286,7 @@ void setup() {
     if (!hasValidWiFiCredentials()) {
       currentScreenIndex = CONFIG_SCREEN;
     } else {
-      currentScreenIndex = METEOGRAM_SCREEN;
+      currentScreenIndex = CURRENT_WEATHER_SCREEN;
     }
   }
 
