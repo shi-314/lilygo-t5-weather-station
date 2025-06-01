@@ -19,8 +19,7 @@ class ConfigurationScreen : public Screen {
   String generateWiFiQRString() const;
 
  public:
-  ConfigurationScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display,
-                      const String& accessPointName, const String& accessPointPassword);
+  ConfigurationScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display);
 
   void render() override;
 };

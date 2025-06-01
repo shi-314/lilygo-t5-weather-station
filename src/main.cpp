@@ -123,8 +123,7 @@ void cycleToNextScreen() {
 void displayCurrentScreen() {
   switch (currentScreenIndex) {
     case CONFIG_SCREEN: {
-      ConfigurationScreen configurationScreen(display, configurationServer.getWifiAccessPointName(),
-                                              configurationServer.getWifiAccessPointPassword());
+      ConfigurationScreen configurationScreen(display);
       configurationScreen.render();
 
       configurationServer.run(updateConfiguration);
