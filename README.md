@@ -2,6 +2,10 @@
 
 A weather station for LilyGO T5 e-paper displays that shows current weather, forecasts, and AI-generated weather summaries.
 
+![FinishedDevice](https://blog.shvn.dev/posts/2025-lilygo-t5-weather-station/cover_hu_55bb10d7bb0097ef.jpg)
+
+See also the [blog post](https://blog.shvn.dev/posts/2025-lilygo-t5-weather-station/) I wrote about this.
+
 ## Features
 
 - Current weather display
