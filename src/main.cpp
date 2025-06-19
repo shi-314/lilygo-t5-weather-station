@@ -28,9 +28,9 @@ RTC_DATA_ATTR char openaiApiKey[200];
 RTC_DATA_ATTR char aiPromptStyle[200];
 RTC_DATA_ATTR char city[100];
 RTC_DATA_ATTR char countryCode[3];
-RTC_DATA_ATTR bool configInitialized = false;
 RTC_DATA_ATTR float latitude = NAN;
 RTC_DATA_ATTR float longitude = NAN;
+RTC_DATA_ATTR bool configInitialized = false;
 
 const float fallbackLatitude = 52.520008;
 const float fallbackLongitude = 13.404954;
