@@ -8,6 +8,14 @@
 #include "config_default.h"
 #endif
 
+enum ScreenType {
+  CONFIG_SCREEN = 0,
+  CURRENT_WEATHER_SCREEN = 1,
+  METEOGRAM_SCREEN = 2,
+  MESSAGE_SCREEN = 3,
+  SCREEN_COUNT = 4
+};
+
 struct ApplicationConfig {
   char wifiSSID[64];
   char wifiPassword[64];
@@ -17,6 +25,7 @@ struct ApplicationConfig {
   char countryCode[3];
   float latitude;
   float longitude;
+  int currentScreenIndex;
 
   ApplicationConfig() {
     memset(wifiSSID, 0, sizeof(wifiSSID));
@@ -35,6 +44,7 @@ struct ApplicationConfig {
 
     latitude = NAN;
     longitude = NAN;
+    currentScreenIndex = CURRENT_WEATHER_SCREEN;
   }
 
   bool hasValidWiFiCredentials() const { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }

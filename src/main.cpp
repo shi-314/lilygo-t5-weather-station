@@ -44,16 +44,6 @@ const unsigned long aiMessageDeepSleepMicros =
 
 OpenMeteoAPI openMeteoAPI;
 
-enum ScreenType {
-  CONFIG_SCREEN = 0,
-  CURRENT_WEATHER_SCREEN = 1,
-  METEOGRAM_SCREEN = 2,
-  MESSAGE_SCREEN = 3,
-  SCREEN_COUNT = 4
-};
-
-RTC_DATA_ATTR int currentScreenIndex = CURRENT_WEATHER_SCREEN;
-
 void goToSleep(uint64_t sleepTime);
 void displayCurrentScreen();
 void cycleToNextScreen();
@@ -95,18 +85,20 @@ bool isButtonWakeup() {
 }
 
 void cycleToNextScreen() {
-  currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+  appConfig->currentScreenIndex = (appConfig->currentScreenIndex + 1) % SCREEN_COUNT;
 
   // Skip MESSAGE_SCREEN if no OpenAI API key is configured
-  if (currentScreenIndex == MESSAGE_SCREEN && !appConfig->hasValidOpenaiApiKey()) {
-    currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+  if (appConfig->currentScreenIndex == MESSAGE_SCREEN && !appConfig->hasValidOpenaiApiKey()) {
+    appConfig->currentScreenIndex = (appConfig->currentScreenIndex + 1) % SCREEN_COUNT;
   }
 
-  Serial.println("Cycled to screen: " + String(currentScreenIndex));
+  Serial.println("Cycled to screen: " + String(appConfig->currentScreenIndex));
+
+  configStorage.save(*appConfig);
 }
 
 void displayCurrentScreen() {
-  switch (currentScreenIndex) {
+  switch (appConfig->currentScreenIndex) {
     case CONFIG_SCREEN: {
       ConfigurationScreen configurationScreen(display);
       configurationScreen.render();
@@ -164,7 +156,7 @@ void displayCurrentScreen() {
     }
     default: {
       Serial.println("Unknown screen index, defaulting to current weather");
-      currentScreenIndex = CURRENT_WEATHER_SCREEN;
+      appConfig->currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
       WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
       CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(appConfig->city),
@@ -269,6 +261,7 @@ void initializeDefaultConfig() {
     Serial.printf("  - Country Code: %s\n", strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]");
     Serial.printf("  - Latitude: %f\n", appConfig->latitude);
     Serial.printf("  - Longitude: %f\n", appConfig->longitude);
+    Serial.printf("  - Current Screen Index: %d\n", appConfig->currentScreenIndex);
   } else {
     appConfig.reset(new ApplicationConfig());
     Serial.println("Using default configuration");
@@ -286,7 +279,7 @@ void setup() {
 
   if (!isButtonWakeup()) {
     if (!appConfig->hasValidWiFiCredentials()) {
-      currentScreenIndex = CONFIG_SCREEN;
+      appConfig->currentScreenIndex = CONFIG_SCREEN;
     }
   }
 
@@ -294,7 +287,7 @@ void setup() {
     cycleToNextScreen();
   }
 
-  if (currentScreenIndex != CONFIG_SCREEN) {
+  if (appConfig->currentScreenIndex != CONFIG_SCREEN) {
     WiFiConnection wifi(appConfig->wifiSSID, appConfig->wifiPassword);
     wifi.connect();
     if (!wifi.isConnected()) {
@@ -313,9 +306,9 @@ void setup() {
 
   displayCurrentScreen();
 
-  if (currentScreenIndex == CONFIG_SCREEN) {
+  if (appConfig->currentScreenIndex == CONFIG_SCREEN) {
     goToSleep(100000);
-  } else if (currentScreenIndex == MESSAGE_SCREEN) {
+  } else if (appConfig->currentScreenIndex == MESSAGE_SCREEN) {
     goToSleep(aiMessageDeepSleepMicros);
   } else {
     goToSleep(deepSleepMicros);
