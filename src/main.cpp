@@ -261,14 +261,14 @@ void initializeDefaultConfig() {
   if (storedConfig) {
     appConfig = std::move(storedConfig);
     Serial.println("Configuration loaded from persistent storage: ");
-    Serial.printf("\tWiFi SSID: %s\n", appConfig->wifiSSID);
-    Serial.printf("\tOpenAI API Key: %s\n", appConfig->hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]");
-    Serial.printf("\tAI Prompt Style: %s\n",
+    Serial.printf("  - WiFi SSID: %s\n", appConfig->wifiSSID);
+    Serial.printf("  - OpenAI API Key: %s\n", appConfig->hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]");
+    Serial.printf("  - AI Prompt Style: %s\n",
                   strlen(appConfig->aiPromptStyle) > 0 ? appConfig->aiPromptStyle : "[NOT SET]");
-    Serial.printf("\tCity: %s\n", strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]");
-    Serial.printf("\tCountry Code: %s\n", strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]");
-    Serial.printf("\tLatitude: %f\n", appConfig->latitude);
-    Serial.printf("\tLongitude: %f\n", appConfig->longitude);
+    Serial.printf("  - City: %s\n", strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]");
+    Serial.printf("  - Country Code: %s\n", strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]");
+    Serial.printf("  - Latitude: %f\n", appConfig->latitude);
+    Serial.printf("  - Longitude: %f\n", appConfig->longitude);
   } else {
     appConfig.reset(new ApplicationConfig());
     Serial.println("Using default configuration");
