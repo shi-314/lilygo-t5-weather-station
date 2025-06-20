@@ -2,6 +2,12 @@
 
 #include <Arduino.h>
 
+#if __has_include("config_dev.h")
+#include "config_dev.h"
+#else
+#include "config_default.h"
+#endif
+
 struct ApplicationConfig {
   char wifiSSID[64];
   char wifiPassword[64];
@@ -19,6 +25,14 @@ struct ApplicationConfig {
     memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
     memset(city, 0, sizeof(city));
     memset(countryCode, 0, sizeof(countryCode));
+
+    strncpy(wifiSSID, DEFAULT_WIFI_SSID, sizeof(wifiSSID) - 1);
+    strncpy(wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(wifiPassword) - 1);
+    strncpy(openaiApiKey, DEFAULT_OPENAI_API_KEY, sizeof(openaiApiKey) - 1);
+    strncpy(aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(aiPromptStyle) - 1);
+    strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
+    strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
+
     latitude = NAN;
     longitude = NAN;
   }

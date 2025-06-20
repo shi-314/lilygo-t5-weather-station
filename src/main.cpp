@@ -19,13 +19,6 @@
 #include "battery.h"
 #include "boards.h"
 
-// Include development config if available, otherwise use default config
-#if __has_include("config_dev.h")
-#include "config_dev.h"
-#else
-#include "config_default.h"
-#endif
-
 std::unique_ptr<ApplicationConfig> appConfig;
 ApplicationConfigStorage configStorage;
 
@@ -118,9 +111,9 @@ void displayCurrentScreen() {
       ConfigurationScreen configurationScreen(display);
       configurationScreen.render();
 
-      ConfigurationServer configurationServer(Configuration(appConfig->wifiSSID, appConfig->wifiPassword,
-                                                            appConfig->openaiApiKey, appConfig->aiPromptStyle,
-                                                            appConfig->city, appConfig->countryCode));
+      Configuration currentConfig = Configuration(appConfig->wifiSSID, appConfig->wifiPassword, appConfig->openaiApiKey,
+                                                  appConfig->aiPromptStyle, appConfig->city, appConfig->countryCode);
+      ConfigurationServer configurationServer(currentConfig);
 
       configurationServer.run(updateConfiguration);
 
@@ -267,36 +260,17 @@ void initializeDefaultConfig() {
   std::unique_ptr<ApplicationConfig> storedConfig = configStorage.load();
   if (storedConfig) {
     appConfig = std::move(storedConfig);
-    Serial.println("Configuration loaded from persistent storage");
-    Serial.println("--------------------------------");
-    Serial.printf("WiFi SSID: %s\n", appConfig->wifiSSID);
-    Serial.printf("OpenAI API Key: %s\n", appConfig->hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]");
-    Serial.printf("AI Prompt Style: %s\n",
+    Serial.println("Configuration loaded from persistent storage: ");
+    Serial.printf("\tWiFi SSID: %s\n", appConfig->wifiSSID);
+    Serial.printf("\tOpenAI API Key: %s\n", appConfig->hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]");
+    Serial.printf("\tAI Prompt Style: %s\n",
                   strlen(appConfig->aiPromptStyle) > 0 ? appConfig->aiPromptStyle : "[NOT SET]");
-    Serial.printf("City: %s\n", strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]");
-    Serial.printf("Country Code: %s\n", strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]");
-    Serial.printf("Latitude: %f\n", appConfig->latitude);
-    Serial.printf("Longitude: %f\n", appConfig->longitude);
-    Serial.println("--------------------------------");
+    Serial.printf("\tCity: %s\n", strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]");
+    Serial.printf("\tCountry Code: %s\n", strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]");
+    Serial.printf("\tLatitude: %f\n", appConfig->latitude);
+    Serial.printf("\tLongitude: %f\n", appConfig->longitude);
   } else {
     appConfig.reset(new ApplicationConfig());
-
-    memset(appConfig->wifiSSID, 0, sizeof(appConfig->wifiSSID));
-    memset(appConfig->wifiPassword, 0, sizeof(appConfig->wifiPassword));
-    memset(appConfig->openaiApiKey, 0, sizeof(appConfig->openaiApiKey));
-    memset(appConfig->aiPromptStyle, 0, sizeof(appConfig->aiPromptStyle));
-    memset(appConfig->city, 0, sizeof(appConfig->city));
-    memset(appConfig->countryCode, 0, sizeof(appConfig->countryCode));
-
-    strncpy(appConfig->wifiSSID, DEFAULT_WIFI_SSID, sizeof(appConfig->wifiSSID) - 1);
-    strncpy(appConfig->wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(appConfig->wifiPassword) - 1);
-    strncpy(appConfig->openaiApiKey, DEFAULT_OPENAI_API_KEY, sizeof(appConfig->openaiApiKey) - 1);
-    strncpy(appConfig->aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(appConfig->aiPromptStyle) - 1);
-    strncpy(appConfig->city, DEFAULT_CITY, sizeof(appConfig->city) - 1);
-    strncpy(appConfig->countryCode, DEFAULT_COUNTRY_CODE, sizeof(appConfig->countryCode) - 1);
-    appConfig->latitude = NAN;
-    appConfig->longitude = NAN;
-
     Serial.println("Using default configuration");
   }
 }
