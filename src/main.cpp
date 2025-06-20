@@ -3,6 +3,10 @@
 #include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include <time.h>
 
+#include <memory>
+
+#include "ApplicationConfig.h"
+#include "ApplicationConfigStorage.h"
 #include "ChatGPTClient.h"
 #include "ConfigurationScreen.h"
 #include "ConfigurationServer.h"
@@ -15,25 +19,8 @@
 #include "battery.h"
 #include "boards.h"
 
-// Include development config if available, otherwise use default config
-#if __has_include("config_dev.h")
-#include "config_dev.h"
-#else
-#include "config_default.h"
-#endif
-
-RTC_DATA_ATTR char wifiSSID[64];
-RTC_DATA_ATTR char wifiPassword[64];
-RTC_DATA_ATTR char openaiApiKey[200];
-RTC_DATA_ATTR char aiPromptStyle[200];
-RTC_DATA_ATTR char city[100];
-RTC_DATA_ATTR char countryCode[3];
-RTC_DATA_ATTR bool configInitialized = false;
-RTC_DATA_ATTR float latitude = NAN;
-RTC_DATA_ATTR float longitude = NAN;
-
-const float fallbackLatitude = 52.520008;
-const float fallbackLongitude = 13.404954;
+std::unique_ptr<ApplicationConfig> appConfig;
+ApplicationConfigStorage configStorage;
 
 const String aiWeatherPrompt =
     "I will share a JSON payload with you from the Open Meteo API which has weather forecast data for the current "
@@ -53,54 +40,35 @@ const unsigned long aiMessageDeepSleepMicros =
     3600000000;  // Deep sleep time for AI message screen in microseconds (1 hour)
 
 OpenMeteoAPI openMeteoAPI;
-ConfigurationServer configurationServer(Configuration(wifiSSID, wifiPassword, openaiApiKey, aiPromptStyle, city,
-                                                      countryCode));
-
-enum ScreenType {
-  CONFIG_SCREEN = 0,
-  CURRENT_WEATHER_SCREEN = 1,
-  METEOGRAM_SCREEN = 2,
-  MESSAGE_SCREEN = 3,
-  SCREEN_COUNT = 4
-};
-
-RTC_DATA_ATTR int currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
 void goToSleep(uint64_t sleepTime);
 void displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
 void updateConfiguration(const Configuration& config);
-bool hasValidOpenaiApiKey();
 void initializeDefaultConfig();
 
-bool hasValidWiFiCredentials() { return strlen(wifiSSID) > 0 && strlen(wifiPassword) > 0; }
-
-bool hasValidOpenaiApiKey() { return strlen(openaiApiKey) > 0; }
-
 void geocodeCurrentLocation() {
-  if (strlen(city) == 0) {
+  if (strlen(appConfig->city) == 0) {
     Serial.println("No city configured, using default coordinates");
-    latitude = fallbackLatitude;
-    longitude = fallbackLongitude;
     return;
   }
 
-  Serial.printf("Geocoding location: %s (%s)\n", city, strlen(countryCode) > 0 ? countryCode : "");
+  Serial.printf("Geocoding location: %s (%s)\n", appConfig->city,
+                strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "");
 
-  GeocodingResult location = openMeteoAPI.getLocationByCity(String(city), String(countryCode));
+  GeocodingResult location = openMeteoAPI.getLocationByCity(String(appConfig->city), String(appConfig->countryCode));
   if (location.name.length() > 0) {
-    latitude = location.latitude;
-    longitude = location.longitude;
+    appConfig->latitude = location.latitude;
+    appConfig->longitude = location.longitude;
 
-    strncpy(city, location.name.c_str(), sizeof(city) - 1);
-    strncpy(countryCode, location.countryCode.c_str(), sizeof(countryCode) - 1);
+    strncpy(appConfig->city, location.name.c_str(), sizeof(appConfig->city) - 1);
+    strncpy(appConfig->countryCode, location.countryCode.c_str(), sizeof(appConfig->countryCode) - 1);
 
-    Serial.printf("Geocoded successfully: %s -> (%f, %f)\n", city, latitude, longitude);
+    Serial.printf("Geocoded successfully: %s -> (%f, %f)\n", appConfig->city, appConfig->latitude,
+                  appConfig->longitude);
   } else {
-    Serial.printf("Geocoding failed for %s, using default coordinates\n", city);
-    latitude = fallbackLatitude;
-    longitude = fallbackLongitude;
+    Serial.printf("Geocoding failed for %s, using fallback coordinates\n", appConfig->city);
   }
 }
 
@@ -110,21 +78,27 @@ bool isButtonWakeup() {
 }
 
 void cycleToNextScreen() {
-  currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+  appConfig->currentScreenIndex = (appConfig->currentScreenIndex + 1) % SCREEN_COUNT;
 
   // Skip MESSAGE_SCREEN if no OpenAI API key is configured
-  if (currentScreenIndex == MESSAGE_SCREEN && !hasValidOpenaiApiKey()) {
-    currentScreenIndex = (currentScreenIndex + 1) % SCREEN_COUNT;
+  if (appConfig->currentScreenIndex == MESSAGE_SCREEN && !appConfig->hasValidOpenaiApiKey()) {
+    appConfig->currentScreenIndex = (appConfig->currentScreenIndex + 1) % SCREEN_COUNT;
   }
 
-  Serial.println("Cycled to screen: " + String(currentScreenIndex));
+  Serial.println("Cycled to screen: " + String(appConfig->currentScreenIndex));
+
+  configStorage.save(*appConfig);
 }
 
 void displayCurrentScreen() {
-  switch (currentScreenIndex) {
+  switch (appConfig->currentScreenIndex) {
     case CONFIG_SCREEN: {
       ConfigurationScreen configurationScreen(display);
       configurationScreen.render();
+
+      Configuration currentConfig = Configuration(appConfig->wifiSSID, appConfig->wifiPassword, appConfig->openaiApiKey,
+                                                  appConfig->aiPromptStyle, appConfig->city, appConfig->countryCode);
+      ConfigurationServer configurationServer(currentConfig);
 
       configurationServer.run(updateConfiguration);
 
@@ -146,25 +120,26 @@ void displayCurrentScreen() {
       break;
     }
     case CURRENT_WEATHER_SCREEN: {
-      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
-      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(city), String(countryCode));
+      WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
+      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(appConfig->city),
+                                                String(appConfig->countryCode));
       currentWeatherScreen.render();
       break;
     }
     case METEOGRAM_SCREEN: {
-      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
       break;
     }
     case MESSAGE_SCREEN: {
-      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
+      WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
 
       String prompt = aiWeatherPrompt;
-      prompt += "- Use the following style: " + String(aiPromptStyle) + "\n";
+      prompt += "- Use the following style: " + String(appConfig->aiPromptStyle) + "\n";
       prompt += forecastData.apiPayload;
 
-      ChatGPTClient chatGPTClient(openaiApiKey);
+      ChatGPTClient chatGPTClient(appConfig->openaiApiKey);
       String chatGPTResponse = chatGPTClient.generateContent(prompt);
 
       MessageScreen messageScreen(display);
@@ -174,10 +149,11 @@ void displayCurrentScreen() {
     }
     default: {
       Serial.println("Unknown screen index, defaulting to current weather");
-      currentScreenIndex = CURRENT_WEATHER_SCREEN;
+      appConfig->currentScreenIndex = CURRENT_WEATHER_SCREEN;
 
-      WeatherForecast forecastData = openMeteoAPI.getForecast(latitude, longitude);
-      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(city), String(countryCode));
+      WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
+      CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(appConfig->city),
+                                                String(appConfig->countryCode));
       currentWeatherScreen.render();
       break;
     }
@@ -185,64 +161,75 @@ void displayCurrentScreen() {
 }
 
 void updateConfiguration(const Configuration& config) {
-  if (config.ssid.length() >= sizeof(wifiSSID)) {
-    Serial.println("Error: SSID too long, maximum length is " + String(sizeof(wifiSSID) - 1));
+  if (config.ssid.length() >= sizeof(appConfig->wifiSSID)) {
+    Serial.println("Error: SSID too long, maximum length is " + String(sizeof(appConfig->wifiSSID) - 1));
     return;
   }
 
-  if (config.password.length() >= sizeof(wifiPassword)) {
-    Serial.println("Error: Password too long, maximum length is " + String(sizeof(wifiPassword) - 1));
+  if (config.password.length() >= sizeof(appConfig->wifiPassword)) {
+    Serial.println("Error: Password too long, maximum length is " + String(sizeof(appConfig->wifiPassword) - 1));
     return;
   }
 
-  if (config.openaiApiKey.length() >= sizeof(openaiApiKey)) {
-    Serial.println("Error: OpenAI API key too long, maximum length is " + String(sizeof(openaiApiKey) - 1));
+  if (config.openaiApiKey.length() >= sizeof(appConfig->openaiApiKey)) {
+    Serial.println("Error: OpenAI API key too long, maximum length is " + String(sizeof(appConfig->openaiApiKey) - 1));
     return;
   }
 
-  if (config.aiPromptStyle.length() >= sizeof(aiPromptStyle)) {
-    Serial.println("Error: AI Prompt Style too long, maximum length is " + String(sizeof(aiPromptStyle) - 1));
+  if (config.aiPromptStyle.length() >= sizeof(appConfig->aiPromptStyle)) {
+    Serial.println("Error: AI Prompt Style too long, maximum length is " +
+                   String(sizeof(appConfig->aiPromptStyle) - 1));
     return;
   }
 
-  if (config.city.length() >= sizeof(city)) {
-    Serial.println("Error: City too long, maximum length is " + String(sizeof(city) - 1));
+  if (config.city.length() >= sizeof(appConfig->city)) {
+    Serial.println("Error: City too long, maximum length is " + String(sizeof(appConfig->city) - 1));
     return;
   }
 
-  if (config.countryCode.length() >= sizeof(countryCode)) {
-    Serial.println("Error: Country code too long, maximum length is " + String(sizeof(countryCode) - 1));
+  if (config.countryCode.length() >= sizeof(appConfig->countryCode)) {
+    Serial.println("Error: Country code too long, maximum length is " + String(sizeof(appConfig->countryCode) - 1));
     return;
   }
 
-  bool locationChanged = (config.city != String(city)) || (config.countryCode != String(countryCode));
+  bool locationChanged =
+      (config.city != String(appConfig->city)) || (config.countryCode != String(appConfig->countryCode));
 
-  memset(wifiSSID, 0, sizeof(wifiSSID));
-  memset(wifiPassword, 0, sizeof(wifiPassword));
-  memset(openaiApiKey, 0, sizeof(openaiApiKey));
-  memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
-  memset(city, 0, sizeof(city));
-  memset(countryCode, 0, sizeof(countryCode));
+  memset(appConfig->wifiSSID, 0, sizeof(appConfig->wifiSSID));
+  memset(appConfig->wifiPassword, 0, sizeof(appConfig->wifiPassword));
+  memset(appConfig->openaiApiKey, 0, sizeof(appConfig->openaiApiKey));
+  memset(appConfig->aiPromptStyle, 0, sizeof(appConfig->aiPromptStyle));
+  memset(appConfig->city, 0, sizeof(appConfig->city));
+  memset(appConfig->countryCode, 0, sizeof(appConfig->countryCode));
 
-  strncpy(wifiSSID, config.ssid.c_str(), sizeof(wifiSSID) - 1);
-  strncpy(wifiPassword, config.password.c_str(), sizeof(wifiPassword) - 1);
-  strncpy(openaiApiKey, config.openaiApiKey.c_str(), sizeof(openaiApiKey) - 1);
-  strncpy(aiPromptStyle, config.aiPromptStyle.c_str(), sizeof(aiPromptStyle) - 1);
-  strncpy(city, config.city.c_str(), sizeof(city) - 1);
-  strncpy(countryCode, config.countryCode.c_str(), sizeof(countryCode) - 1);
+  strncpy(appConfig->wifiSSID, config.ssid.c_str(), sizeof(appConfig->wifiSSID) - 1);
+  strncpy(appConfig->wifiPassword, config.password.c_str(), sizeof(appConfig->wifiPassword) - 1);
+  strncpy(appConfig->openaiApiKey, config.openaiApiKey.c_str(), sizeof(appConfig->openaiApiKey) - 1);
+  strncpy(appConfig->aiPromptStyle, config.aiPromptStyle.c_str(), sizeof(appConfig->aiPromptStyle) - 1);
+  strncpy(appConfig->city, config.city.c_str(), sizeof(appConfig->city) - 1);
+  strncpy(appConfig->countryCode, config.countryCode.c_str(), sizeof(appConfig->countryCode) - 1);
 
   if (locationChanged) {
-    latitude = NAN;
-    longitude = NAN;
+    appConfig->latitude = NAN;
+    appConfig->longitude = NAN;
     Serial.println("Location changed - coordinates will be re-geocoded on next startup");
   }
 
-  Serial.println("Configuration updated in RTC memory");
-  Serial.println("WiFi SSID: " + String(wifiSSID));
-  Serial.println("OpenAI API Key: " + String(hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]"));
-  Serial.println("AI Prompt Style: " + String(strlen(aiPromptStyle) > 0 ? aiPromptStyle : "[NOT SET]"));
-  Serial.println("City: " + String(strlen(city) > 0 ? city : "[NOT SET]"));
-  Serial.println("Country Code: " + String(strlen(countryCode) > 0 ? countryCode : "[NOT SET]"));
+  // Save configuration to persistent storage
+  bool saved = configStorage.save(*appConfig);
+  if (saved) {
+    Serial.println("Configuration saved to persistent storage");
+  } else {
+    Serial.println("Failed to save configuration to persistent storage");
+  }
+
+  Serial.println("Configuration updated");
+  Serial.println("WiFi SSID: " + String(appConfig->wifiSSID));
+  Serial.println("OpenAI API Key: " + String(appConfig->hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]"));
+  Serial.println("AI Prompt Style: " +
+                 String(strlen(appConfig->aiPromptStyle) > 0 ? appConfig->aiPromptStyle : "[NOT SET]"));
+  Serial.println("City: " + String(strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]"));
+  Serial.println("Country Code: " + String(strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]"));
 }
 
 void goToSleep(uint64_t sleepTime) {
@@ -255,23 +242,23 @@ void goToSleep(uint64_t sleepTime) {
 }
 
 void initializeDefaultConfig() {
-  if (configInitialized) return;
-
-  memset(wifiSSID, 0, sizeof(wifiSSID));
-  memset(wifiPassword, 0, sizeof(wifiPassword));
-  memset(openaiApiKey, 0, sizeof(openaiApiKey));
-  memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
-  memset(city, 0, sizeof(city));
-  memset(countryCode, 0, sizeof(countryCode));
-
-  strncpy(wifiSSID, DEFAULT_WIFI_SSID, sizeof(wifiSSID) - 1);
-  strncpy(wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(wifiPassword) - 1);
-  strncpy(openaiApiKey, DEFAULT_OPENAI_API_KEY, sizeof(openaiApiKey) - 1);
-  strncpy(aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(aiPromptStyle) - 1);
-  strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
-  strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
-
-  configInitialized = true;
+  std::unique_ptr<ApplicationConfig> storedConfig = configStorage.load();
+  if (storedConfig) {
+    appConfig = std::move(storedConfig);
+    Serial.println("Configuration loaded from persistent storage: ");
+    Serial.printf("  - WiFi SSID: %s\n", appConfig->wifiSSID);
+    Serial.printf("  - OpenAI API Key: %s\n", appConfig->hasValidOpenaiApiKey() ? "[CONFIGURED]" : "[NOT SET]");
+    Serial.printf("  - AI Prompt Style: %s\n",
+                  strlen(appConfig->aiPromptStyle) > 0 ? appConfig->aiPromptStyle : "[NOT SET]");
+    Serial.printf("  - City: %s\n", strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]");
+    Serial.printf("  - Country Code: %s\n", strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]");
+    Serial.printf("  - Latitude: %f\n", appConfig->latitude);
+    Serial.printf("  - Longitude: %f\n", appConfig->longitude);
+    Serial.printf("  - Current Screen Index: %d\n", appConfig->currentScreenIndex);
+  } else {
+    appConfig.reset(new ApplicationConfig());
+    Serial.println("Using default configuration");
+  }
 }
 
 void setup() {
@@ -284,8 +271,8 @@ void setup() {
   SPI.begin(EPD_SCLK, EPD_MISO, EPD_MOSI);
 
   if (!isButtonWakeup()) {
-    if (!hasValidWiFiCredentials()) {
-      currentScreenIndex = CONFIG_SCREEN;
+    if (!appConfig->hasValidWiFiCredentials()) {
+      appConfig->currentScreenIndex = CONFIG_SCREEN;
     }
   }
 
@@ -293,8 +280,8 @@ void setup() {
     cycleToNextScreen();
   }
 
-  if (currentScreenIndex != CONFIG_SCREEN) {
-    WiFiConnection wifi(wifiSSID, wifiPassword);
+  if (appConfig->currentScreenIndex != CONFIG_SCREEN) {
+    WiFiConnection wifi(appConfig->wifiSSID, appConfig->wifiPassword);
     wifi.connect();
     if (!wifi.isConnected()) {
       Serial.println("Failed to connect to WiFi");
@@ -304,16 +291,17 @@ void setup() {
       return;
     }
 
-    if (isnan(latitude) || isnan(longitude)) {
+    if (isnan(appConfig->latitude) || isnan(appConfig->longitude)) {
       geocodeCurrentLocation();
+      configStorage.save(*appConfig);
     }
   }
 
   displayCurrentScreen();
 
-  if (currentScreenIndex == CONFIG_SCREEN) {
+  if (appConfig->currentScreenIndex == CONFIG_SCREEN) {
     goToSleep(100000);
-  } else if (currentScreenIndex == MESSAGE_SCREEN) {
+  } else if (appConfig->currentScreenIndex == MESSAGE_SCREEN) {
     goToSleep(aiMessageDeepSleepMicros);
   } else {
     goToSleep(deepSleepMicros);
