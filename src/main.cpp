@@ -22,9 +22,6 @@
 std::unique_ptr<ApplicationConfig> appConfig;
 ApplicationConfigStorage configStorage;
 
-const float fallbackLatitude = 52.520008;
-const float fallbackLongitude = 13.404954;
-
 const String aiWeatherPrompt =
     "I will share a JSON payload with you from the Open Meteo API which has weather forecast data for the current "
     "day. You have to summarize it into one sentence:\n"
@@ -54,8 +51,6 @@ void initializeDefaultConfig();
 void geocodeCurrentLocation() {
   if (strlen(appConfig->city) == 0) {
     Serial.println("No city configured, using default coordinates");
-    appConfig->latitude = fallbackLatitude;
-    appConfig->longitude = fallbackLongitude;
     return;
   }
 
@@ -73,9 +68,7 @@ void geocodeCurrentLocation() {
     Serial.printf("Geocoded successfully: %s -> (%f, %f)\n", appConfig->city, appConfig->latitude,
                   appConfig->longitude);
   } else {
-    Serial.printf("Geocoding failed for %s, using default coordinates\n", appConfig->city);
-    appConfig->latitude = fallbackLatitude;
-    appConfig->longitude = fallbackLongitude;
+    Serial.printf("Geocoding failed for %s, using fallback coordinates\n", appConfig->city);
   }
 }
 

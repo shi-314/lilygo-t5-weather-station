@@ -42,8 +42,9 @@ struct ApplicationConfig {
     strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
     strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
 
-    latitude = NAN;
-    longitude = NAN;
+    latitude = DEFAULT_LATITUDE;
+    longitude = DEFAULT_LONGITUDE;
+
     currentScreenIndex = CURRENT_WEATHER_SCREEN;
   }
 
