@@ -2,9 +2,8 @@
 
 #include "battery.h"
 
-CurrentWeatherScreen::CurrentWeatherScreen(
-    GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display, const WeatherForecast& forecast,
-    const String& cityName, const String& countryCode)
+CurrentWeatherScreen::CurrentWeatherScreen(DisplayType& display, const WeatherForecast& forecast,
+                                           const String& cityName, const String& countryCode)
     : display(display),
       forecast(forecast),
       cityName(cityName),

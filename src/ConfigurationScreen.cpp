@@ -1,6 +1,6 @@
 #include "ConfigurationScreen.h"
 
-ConfigurationScreen::ConfigurationScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display)
+ConfigurationScreen::ConfigurationScreen(DisplayType& display)
     : display(display), accessPointName("WeatherStation-Config"), accessPointPassword("configure123") {
   gfx.begin(display);
 }
