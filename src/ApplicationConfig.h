@@ -13,7 +13,8 @@ enum ScreenType {
   CURRENT_WEATHER_SCREEN = 1,
   METEOGRAM_SCREEN = 2,
   MESSAGE_SCREEN = 3,
-  SCREEN_COUNT = 4
+  IMAGE_SCREEN = 4,
+  SCREEN_COUNT = 5
 };
 
 struct ApplicationConfig {

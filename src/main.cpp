@@ -10,6 +10,7 @@
 #include "ConfigurationServer.h"
 #include "CurrentWeatherScreen.h"
 #include "DisplayType.h"
+#include "ImageScreen.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
 #include "OpenMeteoAPI.h"
@@ -143,6 +144,11 @@ void displayCurrentScreen() {
       MessageScreen messageScreen(display);
       messageScreen.setMessageText(chatGPTResponse);
       messageScreen.render();
+      break;
+    }
+    case IMAGE_SCREEN: {
+      ImageScreen imageScreen(display);
+      imageScreen.render();
       break;
     }
     default: {
