@@ -62,8 +62,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(imageUrl)) +
                       "&width=" + String(display.height()) + "&height=" + String(display.width()) + "&dither=true";
 
-  Serial.println("Requesting image from: " + requestUrl);
-
   http.begin(requestUrl);
   http.setTimeout(30000);  // 30 second timeout
 
@@ -81,11 +79,7 @@ bool ImageScreen::downloadAndDisplayImage() {
     return false;
   }
 
-  Serial.println("HTTP request successful");
-
   String contentType = http.header("Content-Type");
-  Serial.printf("Content-Type: '%s'\n", contentType.c_str());
-
   contentType.toLowerCase();
   if (!contentType.isEmpty() && contentType != "image/bmp") {
     Serial.println("Unexpected content type: " + contentType);
@@ -102,8 +96,6 @@ bool ImageScreen::downloadAndDisplayImage() {
     return false;
   }
 
-  Serial.printf("Received payload of %d bytes\n", payload.length());
-
   // Convert string to byte array for BMP processing
   const uint8_t* data = (const uint8_t*)payload.c_str();
   size_t dataSize = payload.length();
@@ -119,7 +111,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   uint8_t bmpHeader[54];
   memcpy(bmpHeader, data + dataIndex, 54);
   dataIndex += 54;
-  Serial.println("BMP header read successfully");
 
   // Parse BMP header
   if (bmpHeader[0] != 'B' || bmpHeader[1] != 'M') {
@@ -133,9 +124,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   uint32_t imageHeight = bmpHeader[22] | (bmpHeader[23] << 8) | (bmpHeader[24] << 16) | (bmpHeader[25] << 24);
   uint16_t bitsPerPixel = bmpHeader[28] | (bmpHeader[29] << 8);
   uint32_t compression = bmpHeader[30] | (bmpHeader[31] << 8) | (bmpHeader[32] << 16) | (bmpHeader[33] << 24);
-
-  Serial.printf("BMP Info: %dx%d, %d bits per pixel, data offset: %d, compression: %d\n", imageWidth, imageHeight,
-                bitsPerPixel, dataOffset, compression);
 
   // Validate BMP parameters
   if (bitsPerPixel != 8) {
@@ -161,7 +149,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   uint8_t palette[16];
   memcpy(palette, data + dataIndex, 16);
   dataIndex += 16;
-  Serial.println("Color palette read successfully");
 
   // Skip any remaining header bytes until data offset
   if (dataOffset > dataIndex) {
@@ -183,9 +170,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   int offsetX = 0;
   int offsetY = 0;
 
-  Serial.printf("Display: %dx%d, Image: %dx%d, Offset: (%d,%d)\n", display.width(), display.height(), imageWidth,
-                imageHeight, offsetX, offsetY);
-
   // Read and display the image data
   // Palette was already read above
 
@@ -206,11 +190,6 @@ bool ImageScreen::downloadAndDisplayImage() {
 
     // Calculate the correct display Y coordinate (BMP is bottom-to-top, so we need to flip it)
     int displayRowY = offsetY + y;
-
-    // Debug: show progress every 20 rows
-    if (y % 20 == 0) {
-      Serial.printf("Reading BMP row %d (will display at y=%d)\n", y, displayRowY);
-    }
 
     for (int x = 0; x < imageWidth; x++) {
       uint8_t pixelIndex = rowBuffer[x];
@@ -251,8 +230,6 @@ bool ImageScreen::downloadAndDisplayImage() {
 }
 
 void ImageScreen::render() {
-  Serial.println("Displaying image screen");
-
   if (!downloadAndDisplayImage()) {
     displayError("Failed to load image");
     return;
@@ -260,6 +237,4 @@ void ImageScreen::render() {
 
   display.displayWindow(0, 0, display.width(), display.height());
   display.hibernate();
-
-  Serial.println("Image display complete");
 }
