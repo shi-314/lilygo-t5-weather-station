@@ -16,8 +16,6 @@ class ImageScreen : public Screen {
 
   // Hard-coded configuration for the image server
   const char* imageServerUrl = "http://shivans-macbook-air.local:8080";  // Replace with your server URL
-  const int displayWidth = 250;                                          // Display width for image processing
-  const int displayHeight = 122;                                         // Display height for image processing
 
   bool downloadAndDisplayImage();
   void displayError(const String& errorMessage);

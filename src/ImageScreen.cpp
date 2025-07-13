@@ -58,9 +58,9 @@ void ImageScreen::displayError(const String& errorMessage) {
 bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
-  // Build the request URL to the dithering server
+  // Build the request URL to the dithering server using actual display dimensions (swapped for rotation)
   String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(imageUrl)) +
-                      "&width=" + String(displayWidth) + "&height=" + String(displayHeight) + "&dither=true";
+                      "&width=" + String(display.height()) + "&height=" + String(display.width()) + "&dither=true";
 
   Serial.println("Requesting image from: " + requestUrl);
 
@@ -93,36 +93,32 @@ bool ImageScreen::downloadAndDisplayImage() {
     return false;
   }
 
-  // Get the stream
-  WiFiClient* stream = http.getStreamPtr();
+  // Get the payload as a string first to handle chunked encoding properly
+  String payload = http.getString();
 
-  // Handle chunked encoding if present
-  String transferEncoding = http.header("Transfer-Encoding");
-  bool isChunked = (transferEncoding == "chunked");
-
-  if (isChunked) {
-    Serial.println("Handling chunked encoding");
-    // Read and skip chunk size line
-    String chunkSizeLine = stream->readStringUntil('\n');
-    chunkSizeLine.trim();
-
-    long chunkSize = strtol(chunkSizeLine.c_str(), NULL, 16);
-    if (chunkSize <= 0) {
-      Serial.println("Invalid chunk size");
-      http.end();
-      return false;
-    }
-  }
-
-  // Read BMP header
-  uint8_t bmpHeader[54];
-  size_t headerBytesRead = stream->readBytes(bmpHeader, 54);
-
-  if (headerBytesRead != 54) {
-    Serial.printf("Failed to read BMP header: got %d bytes, expected 54\n", headerBytesRead);
+  if (payload.length() == 0) {
+    Serial.println("Empty payload received");
     http.end();
     return false;
   }
+
+  Serial.printf("Received payload of %d bytes\n", payload.length());
+
+  // Convert string to byte array for BMP processing
+  const uint8_t* data = (const uint8_t*)payload.c_str();
+  size_t dataSize = payload.length();
+  size_t dataIndex = 0;
+
+  // Read BMP header
+  if (dataSize < 54) {
+    Serial.printf("Payload too small for BMP header: got %d bytes, expected at least 54\n", dataSize);
+    http.end();
+    return false;
+  }
+
+  uint8_t bmpHeader[54];
+  memcpy(bmpHeader, data + dataIndex, 54);
+  dataIndex += 54;
   Serial.println("BMP header read successfully");
 
   // Parse BMP header
@@ -156,28 +152,26 @@ bool ImageScreen::downloadAndDisplayImage() {
 
   // For indexed color BMP, the palette comes right after the header
   // Read color palette (4 colors * 4 bytes each = 16 bytes)
-  uint8_t palette[16];
-  size_t paletteBytes = stream->readBytes(palette, 16);
-  if (paletteBytes != 16) {
-    Serial.printf("Failed to read color palette: got %d bytes, expected 16\n", paletteBytes);
+  if (dataIndex + 16 > dataSize) {
+    Serial.printf("Not enough data for color palette: need %d bytes, have %d\n", dataIndex + 16, dataSize);
     http.end();
     return false;
   }
+
+  uint8_t palette[16];
+  memcpy(palette, data + dataIndex, 16);
+  dataIndex += 16;
   Serial.println("Color palette read successfully");
 
   // Skip any remaining header bytes until data offset
-  uint32_t totalBytesRead = 54 + 16;  // header + palette
-  if (dataOffset > totalBytesRead) {
-    uint32_t skipBytes = dataOffset - totalBytesRead;
-    while (skipBytes > 0) {
-      uint8_t dummy;
-      if (stream->readBytes(&dummy, 1) != 1) {
-        Serial.println("Failed to skip header bytes");
-        http.end();
-        return false;
-      }
-      skipBytes--;
+  if (dataOffset > dataIndex) {
+    uint32_t skipBytes = dataOffset - dataIndex;
+    if (dataIndex + skipBytes > dataSize) {
+      Serial.printf("Data offset beyond payload size: offset %d, payload size %d\n", dataOffset, dataSize);
+      http.end();
+      return false;
     }
+    dataIndex += skipBytes;
   }
 
   // Initialize display
@@ -185,9 +179,12 @@ bool ImageScreen::downloadAndDisplayImage() {
   display.setRotation(1);
   display.fillScreen(GxEPD_WHITE);
 
-  // Calculate centering position
-  int centerX = (display.width() - imageWidth) / 2;
-  int centerY = (display.height() - imageHeight) / 2;
+  // Render the image over the whole screen (no offset)
+  int offsetX = 0;
+  int offsetY = 0;
+
+  Serial.printf("Display: %dx%d, Image: %dx%d, Offset: (%d,%d)\n", display.width(), display.height(), imageWidth,
+                imageHeight, offsetX, offsetY);
 
   // Read and display the image data
   // Palette was already read above
@@ -197,11 +194,22 @@ bool ImageScreen::downloadAndDisplayImage() {
   uint8_t* rowBuffer = new uint8_t[rowSize];
 
   for (int y = imageHeight - 1; y >= 0; y--) {
-    if (stream->readBytes(rowBuffer, rowSize) != rowSize) {
-      Serial.println("Failed to read image row");
+    if (dataIndex + rowSize > dataSize) {
+      Serial.printf("Not enough data for image row: need %d bytes, have %d remaining\n", rowSize, dataSize - dataIndex);
       delete[] rowBuffer;
       http.end();
       return false;
+    }
+
+    memcpy(rowBuffer, data + dataIndex, rowSize);
+    dataIndex += rowSize;
+
+    // Calculate the correct display Y coordinate (BMP is bottom-to-top, so we need to flip it)
+    int displayRowY = offsetY + y;
+
+    // Debug: show progress every 20 rows
+    if (y % 20 == 0) {
+      Serial.printf("Reading BMP row %d (will display at y=%d)\n", y, displayRowY);
     }
 
     for (int x = 0; x < imageWidth; x++) {
@@ -227,8 +235,8 @@ bool ImageScreen::downloadAndDisplayImage() {
           break;
       }
 
-      int displayX = centerX + x;
-      int displayY = centerY + y;
+      int displayX = offsetX + x;
+      int displayY = displayRowY;
 
       if (displayX >= 0 && displayX < display.width() && displayY >= 0 && displayY < display.height()) {
         display.drawPixel(displayX, displayY, displayColor);
@@ -249,18 +257,6 @@ void ImageScreen::render() {
     displayError("Failed to load image");
     return;
   }
-
-  // Display battery status
-  String batteryStatus = getBatteryStatus();
-
-  gfx.setFontMode(1);
-  gfx.setForegroundColor(GxEPD_DARKGREY);
-  gfx.setBackgroundColor(GxEPD_WHITE);
-  gfx.setFont(smallFont);
-
-  int batteryWidth = gfx.getUTF8Width(batteryStatus.c_str());
-  gfx.setCursor(display.width() - batteryWidth - 2, display.height() - 1);
-  gfx.print(batteryStatus);
 
   display.displayWindow(0, 0, display.width(), display.height());
   display.hibernate();
