@@ -4,11 +4,29 @@
 
 #include "battery.h"
 
-// Image URL configuration
-static const char* imageUrl =
+static const char* imageUrls[] = {
     "https://kagi.com/proxy/"
     "i?c=lWla4SiEvVNmj85b_dW2HcBDkb-62vZXR0vAz8RZagrG_NApBQBAZJFrTl05QJmqNF0XvQX_0qzHNGs0-YvfB6_Bbwo0h_"
-    "AZJJSIaIfmpN2LIrIea6feEj6Tb3oFVVv6YQFY6m3Gndv6VXSbLt3sazc2SwfVYvGAB9WagAI6nu4%3D";  // Replace with your image URL
+    "AZJJSIaIfmpN2LIrIea6feEj6Tb3oFVVv6YQFY6m3Gndv6VXSbLt3sazc2SwfVYvGAB9WagAI6nu4%3D",
+    "https://picsum.photos/250/128?grayscale",
+    "https://kagi.com/proxy/"
+    "blavingad-soft-toy-octopus-yellow__1088894_pe861308_s5.jpg?c=jOcUFI9y9_2ejqcic-j42YJqp8mavP9qxry_"
+    "DFUbo99Bf2YJTGWjlyXuLiDm-3kOp5tn_QAJ0LBnKrKVr7BoFAcVYSsnINUKrbJOP_"
+    "lFq1ldyH9nJWWgchVeiHGSCa7HzZjd57r2HszNEvFhZmpLECSTeJQWSDn940vCTfG1h2A%3D"};
+
+static const size_t imageUrlsCount = sizeof(imageUrls) / sizeof(imageUrls[0]);
+
+// Function to get a random URL from the array
+const char* getRandomImageUrl() {
+  static bool seedInitialized = false;
+  if (!seedInitialized) {
+    randomSeed(millis());
+    seedInitialized = true;
+  }
+
+  int randomIndex = random(imageUrlsCount);
+  return imageUrls[randomIndex];
+}
 
 ImageScreen::ImageScreen(DisplayType& display) : display(display), smallFont(u8g2_font_helvR08_tr) {
   gfx.begin(display);
@@ -59,8 +77,10 @@ bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
   // Build the request URL to the dithering server using actual display dimensions (swapped for rotation)
-  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(imageUrl)) +
+  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(getRandomImageUrl())) +
                       "&width=" + String(display.height()) + "&height=" + String(display.width()) + "&dither=true";
+
+  Serial.println("Requesting image from: " + requestUrl);
 
   http.begin(requestUrl);
   http.setTimeout(30000);  // 30 second timeout
