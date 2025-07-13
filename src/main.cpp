@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <GxEPD2_4G_4G.h>
-#include <gdey/GxEPD2_213_GDEY0213B74.h>
 #include <time.h>
 
 #include <memory>
@@ -11,6 +9,7 @@
 #include "ConfigurationScreen.h"
 #include "ConfigurationServer.h"
 #include "CurrentWeatherScreen.h"
+#include "DisplayType.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
 #include "OpenMeteoAPI.h"
@@ -32,8 +31,7 @@ const String aiWeatherPrompt =
     "- don't mention the location\n"
     "- only include the current weather and the forecast for the remaining day, not the past\n";
 
-GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT> display(
-    GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
+DisplayType display(GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 const unsigned long aiMessageDeepSleepMicros =

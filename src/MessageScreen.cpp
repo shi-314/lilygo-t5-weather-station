@@ -2,7 +2,7 @@
 
 #include "battery.h"
 
-MessageScreen::MessageScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display)
+MessageScreen::MessageScreen(DisplayType& display)
     : display(display), primaryFont(u8g2_font_helvR14_tf), smallFont(u8g2_font_helvR08_tr), messageText("") {
   gfx.begin(display);
 }

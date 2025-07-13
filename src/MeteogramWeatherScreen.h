@@ -1,16 +1,15 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
-#include <GxEPD2_4G_4G.h>
 #include <U8g2_for_Adafruit_GFX.h>
-#include <gdey/GxEPD2_213_GDEY0213B74.h>
 
+#include "DisplayType.h"
 #include "OpenMeteoAPI.h"
 #include "Screen.h"
 
 class MeteogramWeatherScreen : public Screen {
  private:
-  GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display;
+  DisplayType& display;
   U8G2_FOR_ADAFRUIT_GFX gfx;
   WeatherForecast forecast;
 
@@ -23,8 +22,7 @@ class MeteogramWeatherScreen : public Screen {
   void drawDottedLine(int x0, int y0, int x1, int y1, uint16_t color);
 
  public:
-  MeteogramWeatherScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display,
-                         const WeatherForecast& forecast);
+  MeteogramWeatherScreen(DisplayType& display, const WeatherForecast& forecast);
 
   void render() override;
 };

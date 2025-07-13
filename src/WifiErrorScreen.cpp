@@ -1,9 +1,6 @@
 #include "WifiErrorScreen.h"
 
-WifiErrorScreen::WifiErrorScreen(GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>& display)
-    : display(display) {
-  gfx.begin(display);
-}
+WifiErrorScreen::WifiErrorScreen(DisplayType& display) : display(display) { gfx.begin(display); }
 
 void WifiErrorScreen::render() {
   Serial.println("Displaying WiFi error screen");
