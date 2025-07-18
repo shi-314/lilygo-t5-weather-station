@@ -14,8 +14,7 @@ class ImageScreen : public Screen {
 
   const uint8_t* smallFont;
 
-  // Hard-coded configuration for the image server
-  const char* imageServerUrl = "http://shivans-macbook-air.local:8080";  // Replace with your server URL
+  const char* imageServerUrl = "https://dither.lab.shvn.dev";
 
   bool downloadAndDisplayImage();
   void displayError(const String& errorMessage);
