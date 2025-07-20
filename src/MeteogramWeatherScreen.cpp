@@ -205,9 +205,9 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   }
 
   // Draw border around cloud coverage bar
-  display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_LIGHTGREY);
+  display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_BLACK);
 
-  display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
+  display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_BLACK);
 
   for (int i = 0; i < num_points; ++i) {
     if (forecast.hourlyPrecipitation[i] > 0.0f) {
@@ -222,7 +222,7 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
       bar_y = constrain(bar_y, plot_y, plot_y + plot_h);
       bar_height = constrain(bar_height, 0, plot_y + plot_h - bar_y);
 
-      display.fillRect(bar_x, bar_y, bar_width, bar_height, GxEPD_LIGHTGREY);
+      display.fillRect(bar_x, bar_y, bar_width, bar_height, GxEPD_DARKGREY);
     }
   }
 
@@ -261,9 +261,9 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
     display.drawLine(x1, constrain(y1_temp, plot_y, plot_y + plot_h), x2, constrain(y2_temp, plot_y, plot_y + plot_h),
                      GxEPD_BLACK);
     drawDottedLine(x1, constrain(y1_wind, plot_y, plot_y + plot_h), x2, constrain(y2_wind, plot_y, plot_y + plot_h),
-                   GxEPD_DARKGREY);
+                   GxEPD_BLACK);
     drawDottedLine(x1, constrain(y1_gust, plot_y, plot_y + plot_h), x2, constrain(y2_gust, plot_y, plot_y + plot_h),
-                   GxEPD_DARKGREY);
+                   GxEPD_BLACK);
   }
 
   String lastUpdateStr = forecast.lastUpdateTime;
