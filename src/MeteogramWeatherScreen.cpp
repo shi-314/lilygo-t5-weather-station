@@ -211,8 +211,6 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   // Draw border around cloud coverage bar
   display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_BLACK);
 
-  display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_BLACK);
-
   for (int i = 0; i < num_points; ++i) {
     if (forecast.hourlyPrecipitation[i] > 0.0f) {
       int x_center = plot_x + round(i * x_step);
@@ -277,6 +275,8 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
                    constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_gust, plot_y, plot_y + plot_h - 1),
                    GxEPD_BLACK);
   }
+
+  display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_BLACK);
 
   String lastUpdateStr = forecast.lastUpdateTime;
   int lastUpdateMinutes = parseHHMMtoMinutes(lastUpdateStr);
