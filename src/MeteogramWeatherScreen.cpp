@@ -8,8 +8,8 @@
 MeteogramWeatherScreen::MeteogramWeatherScreen(DisplayType &display, const WeatherForecast &forecast)
     : display(display),
       forecast(forecast),
-      primaryFont(u8g2_font_helvR18_tf),
-      secondaryFont(u8g2_font_helvR12_tf),
+      primaryFont(u8g2_font_helvR14_tf),
+      secondaryFont(u8g2_font_helvR10_tf),
       smallFont(u8g2_font_helvR08_tr) {
   gfx.begin(display);
 }
@@ -85,7 +85,7 @@ void MeteogramWeatherScreen::render() {
   int temp_y = wind_y - text_height - 8;
 
   int meteogramX = 0;
-  int meteogramY = 10;
+  int meteogramY = 0;
   int meteogramW = display.width();
   int meteogramH = temp_y - meteogramY - 25;
   drawMeteogram(meteogramX, meteogramY, meteogramW, meteogramH);
@@ -105,7 +105,7 @@ void MeteogramWeatherScreen::render() {
   gfx.setCursor(6, wind_y);
   gfx.print(windDisplay);
 
-  gfx.setForegroundColor(GxEPD_DARKGREY);
+  gfx.setForegroundColor(GxEPD_BLACK);
   gfx.setFont(smallFont);
   int battery_width = gfx.getUTF8Width(batteryStatus.c_str());
   int battery_height = gfx.getFontAscent() - gfx.getFontDescent();
