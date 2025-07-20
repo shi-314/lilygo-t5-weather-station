@@ -10,7 +10,7 @@ MeteogramWeatherScreen::MeteogramWeatherScreen(DisplayType &display, const Weath
       forecast(forecast),
       primaryFont(u8g2_font_helvR14_tf),
       secondaryFont(u8g2_font_helvR10_tf),
-      smallFont(u8g2_font_helvR08_tr),
+      smallFont(u8g2_font_profont10_mr),
       labelFont(u8g2_font_nokiafc22_tn) {
   gfx.begin(display);
 }
