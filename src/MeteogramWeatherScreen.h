@@ -16,6 +16,7 @@ class MeteogramWeatherScreen : public Screen {
   const uint8_t* primaryFont;
   const uint8_t* secondaryFont;
   const uint8_t* smallFont;
+  const uint8_t* labelFont;
 
   int parseHHMMtoMinutes(const String& hhmm);
   void drawMeteogram(int x, int y, int w, int h);
