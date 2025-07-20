@@ -86,7 +86,7 @@ void MeteogramWeatherScreen::render() {
   int temp_y = wind_y - text_height - 8;
 
   int meteogramX = 0;
-  int meteogramY = 0;
+  int meteogramY = 2;
   int meteogramW = display.width();
   int meteogramH = temp_y - meteogramY - 15;
   drawMeteogram(meteogramX, meteogramY, meteogramW, meteogramH);
