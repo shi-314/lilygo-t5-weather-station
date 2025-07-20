@@ -4,15 +4,7 @@
 
 #include "battery.h"
 
-static const char* imageUrls[] = {
-    "https://kagi.com/proxy/"
-    "i?c=lWla4SiEvVNmj85b_dW2HcBDkb-62vZXR0vAz8RZagrG_NApBQBAZJFrTl05QJmqNF0XvQX_0qzHNGs0-YvfB6_Bbwo0h_"
-    "AZJJSIaIfmpN2LIrIea6feEj6Tb3oFVVv6YQFY6m3Gndv6VXSbLt3sazc2SwfVYvGAB9WagAI6nu4%3D",
-    "https://picsum.photos/250/128?grayscale",
-    "https://kagi.com/proxy/"
-    "blavingad-soft-toy-octopus-yellow__1088894_pe861308_s5.jpg?c=jOcUFI9y9_2ejqcic-j42YJqp8mavP9qxry_"
-    "DFUbo99Bf2YJTGWjlyXuLiDm-3kOp5tn_QAJ0LBnKrKVr7BoFAcVYSsnINUKrbJOP_"
-    "lFq1ldyH9nJWWgchVeiHGSCa7HzZjd57r2HszNEvFhZmpLECSTeJQWSDn940vCTfG1h2A%3D"};
+static const char* imageUrls[] = {"https://go-tele.lab.shvn.dev/latest"};
 
 static const size_t imageUrlsCount = sizeof(imageUrls) / sizeof(imageUrls[0]);
 
