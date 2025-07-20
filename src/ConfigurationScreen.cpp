@@ -56,16 +56,16 @@ void ConfigurationScreen::render() {
   display.setFont();
 
   const int textLeftMargin = 8;
-  const int textLineSpacing = 16;
+  const int textLineSpacing = 14;
   const int qrCodePixelScale = 3;
   const int qrCodeModuleCount = 33;
   const int qrCodePixelSize = qrCodeModuleCount * qrCodePixelScale;
-  const int qrCodeQuietZonePixels = 6;
+  const int qrCodeQuietZonePixels = 4;
 
-  int qrCodePositionX = display.width() - qrCodePixelSize - qrCodeQuietZonePixels - 5;
+  int qrCodePositionX = display.width() - qrCodePixelSize - qrCodeQuietZonePixels;
   int qrCodePositionY = (display.height() - qrCodePixelSize) / 2;
 
-  int currentTextLineY = 15;
+  int currentTextLineY = 18;
   int availableTextWidth = qrCodePositionX - textLeftMargin - 8;
 
   gfx.setFont(u8g2_font_open_iconic_embedded_2x_t);
@@ -80,20 +80,21 @@ void ConfigurationScreen::render() {
   gfx.print("Config Mode");
   currentTextLineY += textLineSpacing * 2;
 
-  display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("1. Scan QR code");
+  gfx.setFont(u8g2_font_helvR08_tr);
+  gfx.setCursor(textLeftMargin, currentTextLineY);
+  gfx.println("1. Scan QR code");
   currentTextLineY += textLineSpacing;
 
-  display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("2. Connect to WiFi");
+  gfx.setCursor(textLeftMargin, currentTextLineY);
+  gfx.println("2. Connect to WiFi");
   currentTextLineY += textLineSpacing;
 
-  display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("3. Configure");
+  gfx.setCursor(textLeftMargin, currentTextLineY);
+  gfx.println("3. Configure");
   currentTextLineY += textLineSpacing;
 
-  display.setCursor(textLeftMargin, currentTextLineY);
-  display.println("4. Save & Exit");
+  gfx.setCursor(textLeftMargin, currentTextLineY);
+  gfx.println("4. Save & Exit");
 
   String wifiQRCodeString = generateWiFiQRString();
 
