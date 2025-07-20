@@ -11,7 +11,7 @@ MeteogramWeatherScreen::MeteogramWeatherScreen(DisplayType &display, const Weath
       primaryFont(u8g2_font_helvR14_tf),
       secondaryFont(u8g2_font_helvR10_tf),
       smallFont(u8g2_font_helvR08_tr),
-      labelFont(u8g2_font_profont11_tn) {
+      labelFont(u8g2_font_nokiafc22_tn) {
   gfx.begin(display);
 }
 
@@ -309,7 +309,7 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
     gfx.setFont(labelFont);
     label_w = gfx.getUTF8Width(lastUpdateStr.c_str());
     int time_x = constrain(final_line_x - label_w / 2, x_base, x_base + w - label_w);
-    gfx.setCursor(time_x, plot_y + plot_h + bottom_padding - 6);
+    gfx.setCursor(time_x, plot_y + plot_h + bottom_padding - 4);
     gfx.print(lastUpdateStr);
   }
 }
