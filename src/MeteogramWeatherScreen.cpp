@@ -267,12 +267,15 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
     int y2_gust =
         plot_y + plot_h - round(((forecast.hourlyWindGusts[i + 1] - min_wind) / (max_wind - min_wind)) * plot_h);
 
-    display.drawLine(x1, constrain(y1_temp, plot_y, plot_y + plot_h - 1), x2,
-                     constrain(y2_temp, plot_y, plot_y + plot_h - 1), GxEPD_BLACK);
-    drawDottedLine(x1, constrain(y1_wind, plot_y, plot_y + plot_h - 1), x2,
-                   constrain(y2_wind, plot_y, plot_y + plot_h - 1), GxEPD_BLACK);
-    drawDottedLine(x1, constrain(y1_gust, plot_y, plot_y + plot_h - 1), x2,
-                   constrain(y2_gust, plot_y, plot_y + plot_h - 1), GxEPD_BLACK);
+    display.drawLine(constrain(x1, plot_x, plot_x + plot_w - 1), constrain(y1_temp, plot_y, plot_y + plot_h - 1),
+                     constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_temp, plot_y, plot_y + plot_h - 1),
+                     GxEPD_BLACK);
+    drawDottedLine(constrain(x1, plot_x, plot_x + plot_w - 1), constrain(y1_wind, plot_y, plot_y + plot_h - 1),
+                   constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_wind, plot_y, plot_y + plot_h - 1),
+                   GxEPD_BLACK);
+    drawDottedLine(constrain(x1, plot_x, plot_x + plot_w - 1), constrain(y1_gust, plot_y, plot_y + plot_h - 1),
+                   constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_gust, plot_y, plot_y + plot_h - 1),
+                   GxEPD_BLACK);
   }
 
   String lastUpdateStr = forecast.lastUpdateTime;
