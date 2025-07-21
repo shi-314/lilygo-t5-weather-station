@@ -24,6 +24,8 @@ struct ApplicationConfig {
   char aiPromptStyle[200];
   char city[100];
   char countryCode[3];
+  char imageBaseUrl[200];
+  char imageId[100];
   float latitude;
   float longitude;
   int currentScreenIndex;
@@ -35,6 +37,8 @@ struct ApplicationConfig {
     memset(aiPromptStyle, 0, sizeof(aiPromptStyle));
     memset(city, 0, sizeof(city));
     memset(countryCode, 0, sizeof(countryCode));
+    memset(imageBaseUrl, 0, sizeof(imageBaseUrl));
+    memset(imageId, 0, sizeof(imageId));
 
     strncpy(wifiSSID, DEFAULT_WIFI_SSID, sizeof(wifiSSID) - 1);
     strncpy(wifiPassword, DEFAULT_WIFI_PASSWORD, sizeof(wifiPassword) - 1);
@@ -42,6 +46,8 @@ struct ApplicationConfig {
     strncpy(aiPromptStyle, DEFAULT_AI_PROMPT_STYLE, sizeof(aiPromptStyle) - 1);
     strncpy(city, DEFAULT_CITY, sizeof(city) - 1);
     strncpy(countryCode, DEFAULT_COUNTRY_CODE, sizeof(countryCode) - 1);
+    strncpy(imageBaseUrl, DEFAULT_IMAGE_BASE_URL, sizeof(imageBaseUrl) - 1);
+    strncpy(imageId, DEFAULT_IMAGE_ID, sizeof(imageId) - 1);
 
     latitude = DEFAULT_LATITUDE;
     longitude = DEFAULT_LONGITUDE;

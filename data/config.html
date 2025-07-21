@@ -389,6 +389,19 @@
                     maxlength="2" style="text-transform: uppercase;">
             </div>
 
+            <div class="form-group">
+                <label for="imageBaseUrl">Image Base URL <span class="optional-label">(optional)</span></label>
+                <input type="text" id="imageBaseUrl" name="imageBaseUrl"
+                    placeholder="Enter base URL (e.g., https://example.com)" value="{{CURRENT_IMAGE_BASE_URL}}"
+                    autocomplete="off" autocapitalize="none" autocorrect="off">
+            </div>
+
+            <div class="form-group">
+                <label for="imageId">Image ID <span class="optional-label">(optional)</span></label>
+                <input type="text" id="imageId" name="imageId" placeholder="Enter image ID (e.g., latest, image1)"
+                    value="{{CURRENT_IMAGE_ID}}" autocomplete="off" autocapitalize="none" autocorrect="off">
+            </div>
+
             <div class="ai-toggle-section">
                 <button type="button" class="ai-toggle-btn" id="aiToggleBtn">
                     <span id="aiToggleIcon">▶</span> Configure AI Features (Optional)
@@ -448,6 +461,8 @@
             const aiPromptStyle = document.getElementById('aiPromptStyle').value;
             const city = document.getElementById('city').value;
             const countryCode = document.getElementById('countryCode').value;
+            const imageBaseUrl = document.getElementById('imageBaseUrl').value;
+            const imageId = document.getElementById('imageId').value;
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
@@ -463,6 +478,8 @@
                 formData.append('aiPromptStyle', aiPromptStyle);
                 formData.append('city', city);
                 formData.append('countryCode', countryCode.toUpperCase());
+                formData.append('imageBaseUrl', imageBaseUrl);
+                formData.append('imageId', imageId);
 
                 const response = await fetch('/save', {
                     method: 'POST',

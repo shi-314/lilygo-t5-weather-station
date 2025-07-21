@@ -4,24 +4,24 @@
 
 #include "battery.h"
 
-static const char* imageUrls[] = {"https://go-tele.lab.shvn.dev/latest"};
-
-static const size_t imageUrlsCount = sizeof(imageUrls) / sizeof(imageUrls[0]);
-
-// Function to get a random URL from the array
-const char* getRandomImageUrl() {
-  static bool seedInitialized = false;
-  if (!seedInitialized) {
-    randomSeed(millis());
-    seedInitialized = true;
-  }
-
-  int randomIndex = random(imageUrlsCount);
-  return imageUrls[randomIndex];
+ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
+    : display(display), config(config), smallFont(u8g2_font_helvR08_tr) {
+  gfx.begin(display);
 }
 
-ImageScreen::ImageScreen(DisplayType& display) : display(display), smallFont(u8g2_font_helvR08_tr) {
-  gfx.begin(display);
+String ImageScreen::buildImageUrl() {
+  String baseUrl = String(config.imageBaseUrl);
+  String imageId = String(config.imageId);
+
+  if (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+  }
+
+  if (imageId.startsWith("/")) {
+    imageId = imageId.substring(1);
+  }
+
+  return baseUrl + "/" + imageId;
 }
 
 String ImageScreen::urlEncode(const String& str) {
@@ -68,16 +68,14 @@ void ImageScreen::displayError(const String& errorMessage) {
 bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
-  // Build the request URL to the dithering server using actual display dimensions (swapped for rotation)
-  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(getRandomImageUrl())) +
+  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(buildImageUrl()) +
                       "&width=" + String(display.height()) + "&height=" + String(display.width()) + "&dither=true";
 
   Serial.println("Requesting image from: " + requestUrl);
 
   http.begin(requestUrl);
-  http.setTimeout(30000);  // 30 second timeout
+  http.setTimeout(30000);
 
-  // Collect essential headers
   const char* headerKeys[] = {"Content-Type", "Transfer-Encoding"};
   size_t headerKeysSize = sizeof(headerKeys) / sizeof(char*);
   http.collectHeaders(headerKeys, headerKeysSize);
@@ -99,7 +97,6 @@ bool ImageScreen::downloadAndDisplayImage() {
     return false;
   }
 
-  // Get the payload as a string first to handle chunked encoding properly
   String payload = http.getString();
 
   if (payload.length() == 0) {
@@ -108,12 +105,10 @@ bool ImageScreen::downloadAndDisplayImage() {
     return false;
   }
 
-  // Convert string to byte array for BMP processing
   const uint8_t* data = (const uint8_t*)payload.c_str();
   size_t dataSize = payload.length();
   size_t dataIndex = 0;
 
-  // Read BMP header
   if (dataSize < 54) {
     Serial.printf("Payload too small for BMP header: got %d bytes, expected at least 54\n", dataSize);
     http.end();
@@ -124,7 +119,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   memcpy(bmpHeader, data + dataIndex, 54);
   dataIndex += 54;
 
-  // Parse BMP header
   if (bmpHeader[0] != 'B' || bmpHeader[1] != 'M') {
     Serial.printf("Invalid BMP signature: got 0x%02X 0x%02X, expected 0x42 0x4D ('BM')\n", bmpHeader[0], bmpHeader[1]);
     http.end();
@@ -137,7 +131,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   uint16_t bitsPerPixel = bmpHeader[28] | (bmpHeader[29] << 8);
   uint32_t compression = bmpHeader[30] | (bmpHeader[31] << 8) | (bmpHeader[32] << 16) | (bmpHeader[33] << 24);
 
-  // Validate BMP parameters
   if (bitsPerPixel != 8) {
     Serial.printf("Unsupported bits per pixel: %d (expected 8 for indexed color)\n", bitsPerPixel);
     http.end();
@@ -150,8 +143,6 @@ bool ImageScreen::downloadAndDisplayImage() {
     return false;
   }
 
-  // For indexed color BMP, the palette comes right after the header
-  // Read color palette (4 colors * 4 bytes each = 16 bytes)
   if (dataIndex + 16 > dataSize) {
     Serial.printf("Not enough data for color palette: need %d bytes, have %d\n", dataIndex + 16, dataSize);
     http.end();
@@ -162,7 +153,6 @@ bool ImageScreen::downloadAndDisplayImage() {
   memcpy(palette, data + dataIndex, 16);
   dataIndex += 16;
 
-  // Skip any remaining header bytes until data offset
   if (dataOffset > dataIndex) {
     uint32_t skipBytes = dataOffset - dataIndex;
     if (dataIndex + skipBytes > dataSize) {
@@ -173,19 +163,13 @@ bool ImageScreen::downloadAndDisplayImage() {
     dataIndex += skipBytes;
   }
 
-  // Initialize display
   display.init(115200);
   display.setRotation(1);
   display.fillScreen(GxEPD_WHITE);
 
-  // Render the image over the whole screen (no offset)
   int offsetX = 0;
   int offsetY = 0;
 
-  // Read and display the image data
-  // Palette was already read above
-
-  // Process image data (BMP is stored bottom-to-top)
   uint32_t rowSize = ((imageWidth * bitsPerPixel + 31) / 32) * 4;  // Row size padded to 4-byte boundary
   uint8_t* rowBuffer = new uint8_t[rowSize];
 
