@@ -12,7 +12,7 @@ const char DEFAULT_CITY[] = "Berlin";
 const char DEFAULT_COUNTRY_CODE[] = "DE";
 const float DEFAULT_LATITUDE = 52.520008;
 const float DEFAULT_LONGITUDE = 13.404954;
-const char DEFAULT_IMAGE_BASE_URL[] = "https://go-tele.lab.shvn.dev";
+const char DEFAULT_IMAGE_BASE_URL[] = "https://go-tele.lab.shvn.dev/image";
 const char DEFAULT_IMAGE_ID[] = "";
 
 #endif  // CONFIG_DEFAULT_H
