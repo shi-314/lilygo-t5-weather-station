@@ -21,7 +21,6 @@ class ImageScreen : public Screen {
   bool downloadAndDisplayImage();
   void displayError(const String& errorMessage);
   String urlEncode(const String& str);
-  String buildImageUrl();
 
  public:
   ImageScreen(DisplayType& display, ApplicationConfig& config);

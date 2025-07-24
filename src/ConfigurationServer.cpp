@@ -140,12 +140,8 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
       config.countryCode = request->getParam("countryCode", true)->value();
     }
 
-    if (request->hasParam("imageBaseUrl", true)) {
-      config.imageBaseUrl = request->getParam("imageBaseUrl", true)->value();
-    }
-
-    if (request->hasParam("imageId", true)) {
-      config.imageId = request->getParam("imageId", true)->value();
+    if (request->hasParam("imageUrl", true)) {
+      config.imageUrl = request->getParam("imageUrl", true)->value();
     }
 
     Serial.println("Configuration received");
@@ -187,8 +183,7 @@ String ConfigurationServer::getConfigurationPage() {
   html.replace("{{CURRENT_AI_PROMPT_STYLE}}", currentConfiguration.aiPromptStyle);
   html.replace("{{CURRENT_CITY}}", currentConfiguration.city);
   html.replace("{{CURRENT_COUNTRY_CODE}}", currentConfiguration.countryCode);
-  html.replace("{{CURRENT_IMAGE_BASE_URL}}", currentConfiguration.imageBaseUrl);
-  html.replace("{{CURRENT_IMAGE_ID}}", currentConfiguration.imageId);
+  html.replace("{{CURRENT_IMAGE_URL}}", currentConfiguration.imageUrl);
   return html;
 }
 

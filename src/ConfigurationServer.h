@@ -16,21 +16,19 @@ struct Configuration {
   String aiPromptStyle;
   String city;
   String countryCode;
-  String imageBaseUrl;
-  String imageId;
+  String imageUrl;
 
   Configuration() = default;
 
   Configuration(const String &ssid, const String &password, const String &openaiApiKey, const String &aiPromptStyle,
-                const String &city, const String &countryCode, const String &imageBaseUrl, const String &imageId)
+                const String &city, const String &countryCode, const String &imageUrl)
       : ssid(ssid),
         password(password),
         openaiApiKey(openaiApiKey),
         aiPromptStyle(aiPromptStyle),
         city(city),
         countryCode(countryCode),
-        imageBaseUrl(imageBaseUrl),
-        imageId(imageId) {}
+        imageUrl(imageUrl) {}
 };
 
 using OnSaveCallback = std::function<void(const Configuration &config)>;

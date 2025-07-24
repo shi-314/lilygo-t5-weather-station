@@ -97,7 +97,7 @@ void displayCurrentScreen() {
 
       Configuration currentConfig =
           Configuration(appConfig->wifiSSID, appConfig->wifiPassword, appConfig->openaiApiKey, appConfig->aiPromptStyle,
-                        appConfig->city, appConfig->countryCode, appConfig->imageBaseUrl, appConfig->imageId);
+                        appConfig->city, appConfig->countryCode, appConfig->imageUrl);
       ConfigurationServer configurationServer(currentConfig);
 
       configurationServer.run(updateConfiguration);
@@ -197,13 +197,8 @@ void updateConfiguration(const Configuration& config) {
     return;
   }
 
-  if (config.imageBaseUrl.length() >= sizeof(appConfig->imageBaseUrl)) {
-    Serial.println("Error: Image base URL too long, maximum length is " + String(sizeof(appConfig->imageBaseUrl) - 1));
-    return;
-  }
-
-  if (config.imageId.length() >= sizeof(appConfig->imageId)) {
-    Serial.println("Error: Image ID too long, maximum length is " + String(sizeof(appConfig->imageId) - 1));
+  if (config.imageUrl.length() >= sizeof(appConfig->imageUrl)) {
+    Serial.println("Error: Image URL too long, maximum length is " + String(sizeof(appConfig->imageUrl) - 1));
     return;
   }
 
@@ -216,8 +211,7 @@ void updateConfiguration(const Configuration& config) {
   memset(appConfig->aiPromptStyle, 0, sizeof(appConfig->aiPromptStyle));
   memset(appConfig->city, 0, sizeof(appConfig->city));
   memset(appConfig->countryCode, 0, sizeof(appConfig->countryCode));
-  memset(appConfig->imageBaseUrl, 0, sizeof(appConfig->imageBaseUrl));
-  memset(appConfig->imageId, 0, sizeof(appConfig->imageId));
+  memset(appConfig->imageUrl, 0, sizeof(appConfig->imageUrl));
 
   strncpy(appConfig->wifiSSID, config.ssid.c_str(), sizeof(appConfig->wifiSSID) - 1);
   strncpy(appConfig->wifiPassword, config.password.c_str(), sizeof(appConfig->wifiPassword) - 1);
@@ -225,8 +219,7 @@ void updateConfiguration(const Configuration& config) {
   strncpy(appConfig->aiPromptStyle, config.aiPromptStyle.c_str(), sizeof(appConfig->aiPromptStyle) - 1);
   strncpy(appConfig->city, config.city.c_str(), sizeof(appConfig->city) - 1);
   strncpy(appConfig->countryCode, config.countryCode.c_str(), sizeof(appConfig->countryCode) - 1);
-  strncpy(appConfig->imageBaseUrl, config.imageBaseUrl.c_str(), sizeof(appConfig->imageBaseUrl) - 1);
-  strncpy(appConfig->imageId, config.imageId.c_str(), sizeof(appConfig->imageId) - 1);
+  strncpy(appConfig->imageUrl, config.imageUrl.c_str(), sizeof(appConfig->imageUrl) - 1);
 
   if (locationChanged) {
     appConfig->latitude = NAN;
@@ -249,9 +242,7 @@ void updateConfiguration(const Configuration& config) {
                  String(strlen(appConfig->aiPromptStyle) > 0 ? appConfig->aiPromptStyle : "[NOT SET]"));
   Serial.println("City: " + String(strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]"));
   Serial.println("Country Code: " + String(strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]"));
-  Serial.println("Image Base URL: " +
-                 String(strlen(appConfig->imageBaseUrl) > 0 ? appConfig->imageBaseUrl : "[NOT SET]"));
-  Serial.println("Image ID: " + String(strlen(appConfig->imageId) > 0 ? appConfig->imageId : "[NOT SET]"));
+  Serial.println("Image URL: " + String(strlen(appConfig->imageUrl) > 0 ? appConfig->imageUrl : "[NOT SET]"));
 }
 
 void goToSleep(uint64_t sleepTime) {

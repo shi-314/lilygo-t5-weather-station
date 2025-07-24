@@ -9,21 +9,6 @@ ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
   gfx.begin(display);
 }
 
-String ImageScreen::buildImageUrl() {
-  String baseUrl = String(config.imageBaseUrl);
-  String imageId = String(config.imageId);
-
-  if (baseUrl.endsWith("/")) {
-    baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
-  }
-
-  if (imageId.startsWith("/")) {
-    imageId = imageId.substring(1);
-  }
-
-  return baseUrl + "/" + imageId;
-}
-
 String ImageScreen::urlEncode(const String& str) {
   String encoded = "";
   char c;
@@ -68,7 +53,7 @@ void ImageScreen::displayError(const String& errorMessage) {
 bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
-  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(buildImageUrl()) +
+  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(config.imageUrl)) +
                       "&width=" + String(display.height()) + "&height=" + String(display.width()) + "&dither=true";
 
   Serial.println("Requesting image from: " + requestUrl);
