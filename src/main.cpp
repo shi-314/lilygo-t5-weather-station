@@ -32,7 +32,7 @@ const String aiWeatherPrompt =
     "- don't mention the location\n"
     "- only include the current weather and the forecast for the remaining day, not the past\n";
 
-DisplayType display(GxEPD2_213_flex(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
+DisplayType display(Epd2Type(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 const unsigned long aiMessageDeepSleepMicros =
