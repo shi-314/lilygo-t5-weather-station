@@ -19,7 +19,7 @@ class ImageScreen : public Screen {
   const uint8_t* smallFont;
   String ditheringServiceUrl;
 
-  bool downloadAndDisplayImage();
+  int downloadAndDisplayImage();
   void displayError(const String& errorMessage);
   String urlEncode(const String& str);
   void storeImageETag(const String& etag);
