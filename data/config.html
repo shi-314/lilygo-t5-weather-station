@@ -389,6 +389,17 @@
                     maxlength="2" style="text-transform: uppercase;">
             </div>
 
+            <div class="form-group">
+                <label for="imageUrl">Image URL <span class="optional-label">(optional)</span></label>
+                <input type="text" id="imageUrl" name="imageUrl"
+                    placeholder="Enter full image URL (e.g., https://example.com/image.jpg)"
+                    value="{{CURRENT_IMAGE_URL}}" autocomplete="off" autocapitalize="none" autocorrect="off">
+                <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">
+                    Must return a direct image file (JPEG, PNG, BMP, etc.) that can be downloaded and processed for
+                    e-ink display.
+                </small>
+            </div>
+
             <div class="ai-toggle-section">
                 <button type="button" class="ai-toggle-btn" id="aiToggleBtn">
                     <span id="aiToggleIcon">▶</span> Configure AI Features (Optional)
@@ -448,6 +459,7 @@
             const aiPromptStyle = document.getElementById('aiPromptStyle').value;
             const city = document.getElementById('city').value;
             const countryCode = document.getElementById('countryCode').value;
+            const imageUrl = document.getElementById('imageUrl').value;
 
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
@@ -463,6 +475,7 @@
                 formData.append('aiPromptStyle', aiPromptStyle);
                 formData.append('city', city);
                 formData.append('countryCode', countryCode.toUpperCase());
+                formData.append('imageUrl', imageUrl);
 
                 const response = await fetch('/save', {
                     method: 'POST',

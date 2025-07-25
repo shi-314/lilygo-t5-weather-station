@@ -8,9 +8,10 @@
 MeteogramWeatherScreen::MeteogramWeatherScreen(DisplayType &display, const WeatherForecast &forecast)
     : display(display),
       forecast(forecast),
-      primaryFont(u8g2_font_helvR18_tf),
-      secondaryFont(u8g2_font_helvR12_tf),
-      smallFont(u8g2_font_helvR08_tr) {
+      primaryFont(u8g2_font_helvR14_tf),
+      secondaryFont(u8g2_font_helvR10_tf),
+      smallFont(u8g2_font_micro_tr),
+      labelFont(u8g2_font_nokiafc22_tn) {
   gfx.begin(display);
 }
 
@@ -85,9 +86,9 @@ void MeteogramWeatherScreen::render() {
   int temp_y = wind_y - text_height - 8;
 
   int meteogramX = 0;
-  int meteogramY = 10;
+  int meteogramY = 2;
   int meteogramW = display.width();
-  int meteogramH = temp_y - meteogramY - 25;
+  int meteogramH = temp_y - meteogramY - 15;
   drawMeteogram(meteogramX, meteogramY, meteogramW, meteogramH);
 
   gfx.setFont(primaryFont);
@@ -105,7 +106,7 @@ void MeteogramWeatherScreen::render() {
   gfx.setCursor(6, wind_y);
   gfx.print(windDisplay);
 
-  gfx.setForegroundColor(GxEPD_DARKGREY);
+  gfx.setForegroundColor(GxEPD_BLACK);
   gfx.setFont(smallFont);
   int battery_width = gfx.getUTF8Width(batteryStatus.c_str());
   int battery_height = gfx.getFontAscent() - gfx.getFontDescent();
@@ -134,8 +135,9 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
                              (int)forecast.hourlyWindGusts.size(), (int)forecast.hourlyTime.size(),
                              (int)forecast.hourlyPrecipitation.size(), (int)forecast.hourlyCloudCoverage.size(), 24});
   if (num_points <= 1) {
-    display.setCursor(x_base, y_base + h / 2);
-    display.print("Not enough data.");
+    gfx.setFont(labelFont);
+    gfx.setCursor(x_base, y_base + h / 2);
+    gfx.print("Not enough data.");
     return;
   }
 
@@ -159,9 +161,10 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   if (max_wind == min_wind) max_wind += 1.0f;
   if (max_precipitation == 0.0f) max_precipitation = 1.0f;
 
-  int16_t x1, y1;
   uint16_t label_w, label_h;
-  display.getTextBounds("99", 0, 0, &x1, &y1, &label_w, &label_h);
+  gfx.setFont(labelFont);
+  label_w = gfx.getUTF8Width("99");
+  label_h = gfx.getFontAscent() - gfx.getFontDescent();
 
   int left_padding = label_w + 6;
   int right_padding = label_w + 6;
@@ -176,8 +179,9 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   int plot_h = h - bottom_padding - cloud_bar_height - cloud_bar_spacing;
 
   if (plot_w <= 20 || plot_h <= 10) {
-    display.setCursor(x_base, y_base + h / 2);
-    display.print("Too small for graph.");
+    gfx.setFont(labelFont);
+    gfx.setCursor(x_base, y_base + h / 2);
+    gfx.print("Too small for graph.");
     return;
   }
 
@@ -205,9 +209,7 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   }
 
   // Draw border around cloud coverage bar
-  display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_LIGHTGREY);
-
-  display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_LIGHTGREY);
+  display.drawRect(plot_x, y_base, plot_w, cloud_bar_height, GxEPD_BLACK);
 
   for (int i = 0; i < num_points; ++i) {
     if (forecast.hourlyPrecipitation[i] > 0.0f) {
@@ -222,23 +224,28 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
       bar_y = constrain(bar_y, plot_y, plot_y + plot_h);
       bar_height = constrain(bar_height, 0, plot_y + plot_h - bar_y);
 
-      display.fillRect(bar_x, bar_y, bar_width, bar_height, GxEPD_LIGHTGREY);
+      display.fillRect(bar_x, bar_y, bar_width, bar_height, GxEPD_DARKGREY);
     }
   }
 
-  display.setTextColor(GxEPD_BLACK);
+  gfx.setFont(labelFont);
+  gfx.setForegroundColor(GxEPD_BLACK);
 
   String temp_labels[] = {String(max_temp, 0), String(min_temp, 0)};
   String wind_labels[] = {String(max_wind, 0), String(min_wind, 0)};
-  int y_positions[] = {plot_y, plot_y + plot_h - label_h};
+
+  // Proper vertical alignment: top label at top of plot, bottom label at bottom of plot
+  int font_ascent = gfx.getFontAscent();
+  int font_descent = gfx.getFontDescent();
+  int y_positions[] = {plot_y + font_ascent, plot_y + plot_h - font_descent};
 
   for (int i = 0; i < 2; i++) {
-    display.getTextBounds(temp_labels[i], 0, 0, &x1, &y1, &label_w, &label_h);
-    display.setCursor(plot_x - label_w - 3, y_positions[i]);
-    display.print(temp_labels[i]);
+    label_w = gfx.getUTF8Width(temp_labels[i].c_str());
+    gfx.setCursor(plot_x - label_w - 3, y_positions[i]);
+    gfx.print(temp_labels[i]);
 
-    display.setCursor(plot_x + plot_w + 3, y_positions[i]);
-    display.print(wind_labels[i]);
+    gfx.setCursor(plot_x + plot_w + 3, y_positions[i]);
+    gfx.print(wind_labels[i]);
   }
 
   for (int i = 0; i < num_points - 1; ++i) {
@@ -258,13 +265,18 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
     int y2_gust =
         plot_y + plot_h - round(((forecast.hourlyWindGusts[i + 1] - min_wind) / (max_wind - min_wind)) * plot_h);
 
-    display.drawLine(x1, constrain(y1_temp, plot_y, plot_y + plot_h), x2, constrain(y2_temp, plot_y, plot_y + plot_h),
+    display.drawLine(constrain(x1, plot_x, plot_x + plot_w - 1), constrain(y1_temp, plot_y, plot_y + plot_h - 1),
+                     constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_temp, plot_y, plot_y + plot_h - 1),
                      GxEPD_BLACK);
-    drawDottedLine(x1, constrain(y1_wind, plot_y, plot_y + plot_h), x2, constrain(y2_wind, plot_y, plot_y + plot_h),
-                   GxEPD_DARKGREY);
-    drawDottedLine(x1, constrain(y1_gust, plot_y, plot_y + plot_h), x2, constrain(y2_gust, plot_y, plot_y + plot_h),
-                   GxEPD_DARKGREY);
+    drawDottedLine(constrain(x1, plot_x, plot_x + plot_w - 1), constrain(y1_wind, plot_y, plot_y + plot_h - 1),
+                   constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_wind, plot_y, plot_y + plot_h - 1),
+                   GxEPD_BLACK);
+    drawDottedLine(constrain(x1, plot_x, plot_x + plot_w - 1), constrain(y1_gust, plot_y, plot_y + plot_h - 1),
+                   constrain(x2, plot_x, plot_x + plot_w - 1), constrain(y2_gust, plot_y, plot_y + plot_h - 1),
+                   GxEPD_BLACK);
   }
+
+  display.drawRect(plot_x, plot_y, plot_w, plot_h, GxEPD_BLACK);
 
   String lastUpdateStr = forecast.lastUpdateTime;
   int lastUpdateMinutes = parseHHMMtoMinutes(lastUpdateStr);
@@ -294,9 +306,10 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
   if (final_line_x != -1 && final_line_x >= plot_x && final_line_x <= plot_x + plot_w) {
     display.drawFastVLine(final_line_x, plot_y, plot_h, GxEPD_BLACK);
 
-    display.getTextBounds(lastUpdateStr, 0, 0, &x1, &y1, &label_w, &label_h);
+    gfx.setFont(labelFont);
+    label_w = gfx.getUTF8Width(lastUpdateStr.c_str());
     int time_x = constrain(final_line_x - label_w / 2, x_base, x_base + w - label_w);
-    display.setCursor(time_x, plot_y + plot_h + bottom_padding - 6);
-    display.print(lastUpdateStr);
+    gfx.setCursor(time_x, plot_y + plot_h + bottom_padding - 4);
+    gfx.print(lastUpdateStr);
   }
 }

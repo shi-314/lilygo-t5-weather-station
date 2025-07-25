@@ -10,6 +10,7 @@
 #include "ConfigurationServer.h"
 #include "CurrentWeatherScreen.h"
 #include "DisplayType.h"
+#include "ImageScreen.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
 #include "OpenMeteoAPI.h"
@@ -31,7 +32,7 @@ const String aiWeatherPrompt =
     "- don't mention the location\n"
     "- only include the current weather and the forecast for the remaining day, not the past\n";
 
-DisplayType display(GxEPD2_213_GDEY0213B74(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
+DisplayType display(Epd2Type(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
 const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
 const unsigned long aiMessageDeepSleepMicros =
@@ -94,8 +95,9 @@ void displayCurrentScreen() {
       ConfigurationScreen configurationScreen(display);
       configurationScreen.render();
 
-      Configuration currentConfig = Configuration(appConfig->wifiSSID, appConfig->wifiPassword, appConfig->openaiApiKey,
-                                                  appConfig->aiPromptStyle, appConfig->city, appConfig->countryCode);
+      Configuration currentConfig =
+          Configuration(appConfig->wifiSSID, appConfig->wifiPassword, appConfig->openaiApiKey, appConfig->aiPromptStyle,
+                        appConfig->city, appConfig->countryCode, appConfig->imageUrl);
       ConfigurationServer configurationServer(currentConfig);
 
       configurationServer.run(updateConfiguration);
@@ -145,6 +147,11 @@ void displayCurrentScreen() {
       messageScreen.render();
       break;
     }
+    case IMAGE_SCREEN: {
+      ImageScreen imageScreen(display, *appConfig);
+      imageScreen.render();
+      break;
+    }
     default: {
       Serial.println("Unknown screen index, defaulting to current weather");
       appConfig->currentScreenIndex = CURRENT_WEATHER_SCREEN;
@@ -190,6 +197,11 @@ void updateConfiguration(const Configuration& config) {
     return;
   }
 
+  if (config.imageUrl.length() >= sizeof(appConfig->imageUrl)) {
+    Serial.println("Error: Image URL too long, maximum length is " + String(sizeof(appConfig->imageUrl) - 1));
+    return;
+  }
+
   bool locationChanged =
       (config.city != String(appConfig->city)) || (config.countryCode != String(appConfig->countryCode));
 
@@ -199,6 +211,7 @@ void updateConfiguration(const Configuration& config) {
   memset(appConfig->aiPromptStyle, 0, sizeof(appConfig->aiPromptStyle));
   memset(appConfig->city, 0, sizeof(appConfig->city));
   memset(appConfig->countryCode, 0, sizeof(appConfig->countryCode));
+  memset(appConfig->imageUrl, 0, sizeof(appConfig->imageUrl));
 
   strncpy(appConfig->wifiSSID, config.ssid.c_str(), sizeof(appConfig->wifiSSID) - 1);
   strncpy(appConfig->wifiPassword, config.password.c_str(), sizeof(appConfig->wifiPassword) - 1);
@@ -206,6 +219,7 @@ void updateConfiguration(const Configuration& config) {
   strncpy(appConfig->aiPromptStyle, config.aiPromptStyle.c_str(), sizeof(appConfig->aiPromptStyle) - 1);
   strncpy(appConfig->city, config.city.c_str(), sizeof(appConfig->city) - 1);
   strncpy(appConfig->countryCode, config.countryCode.c_str(), sizeof(appConfig->countryCode) - 1);
+  strncpy(appConfig->imageUrl, config.imageUrl.c_str(), sizeof(appConfig->imageUrl) - 1);
 
   if (locationChanged) {
     appConfig->latitude = NAN;
@@ -228,6 +242,7 @@ void updateConfiguration(const Configuration& config) {
                  String(strlen(appConfig->aiPromptStyle) > 0 ? appConfig->aiPromptStyle : "[NOT SET]"));
   Serial.println("City: " + String(strlen(appConfig->city) > 0 ? appConfig->city : "[NOT SET]"));
   Serial.println("Country Code: " + String(strlen(appConfig->countryCode) > 0 ? appConfig->countryCode : "[NOT SET]"));
+  Serial.println("Image URL: " + String(strlen(appConfig->imageUrl) > 0 ? appConfig->imageUrl : "[NOT SET]"));
 }
 
 void goToSleep(uint64_t sleepTime) {

@@ -3,7 +3,7 @@
 #include "battery.h"
 
 MessageScreen::MessageScreen(DisplayType& display)
-    : display(display), primaryFont(u8g2_font_helvR14_tf), smallFont(u8g2_font_helvR08_tr), messageText("") {
+    : display(display), primaryFont(u8g2_font_helvB12_tf), smallFont(u8g2_font_micro_tr), messageText("") {
   gfx.begin(display);
 }
 
@@ -109,7 +109,7 @@ void MessageScreen::render() {
   // Display battery status in corner
   String batteryStatus = getBatteryStatus();
   gfx.setFont(smallFont);
-  gfx.setForegroundColor(GxEPD_DARKGREY);
+  gfx.setForegroundColor(GxEPD_BLACK);
 
   int batteryWidth = gfx.getUTF8Width(batteryStatus.c_str());
   gfx.setCursor(displayWidth - batteryWidth - 2, displayHeight - 1);

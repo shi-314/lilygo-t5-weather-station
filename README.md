@@ -21,7 +21,9 @@ See also the [blog post](https://blog.shvn.dev/posts/2025-lilygo-t5-weather-stat
 
 ## Hardware Required
 
-- [LilyGO T5 v2.13 e-paper display board](https://lilygo.cc/en-pl/products/t5-v2-3-1?variant=42366871666869)
+- One of the following boards:
+    - [LilyGo T5 v2.13 e-paper display board (4 grayscale colors)](https://lilygo.cc/en-pl/products/t5-2-13inch-e-paper?variant=42466420850869)
+    - [LilyGO T5 v2.13 e-paper display board (officially only black and white)](https://lilygo.cc/en-pl/products/t5-v2-3-1?variant=42366871666869)
 - [Case](https://www.thingiverse.com/thing:4670205/files)
 - LiPo battery: 3.7V 500mAh recommended (fits in case, ~1 month battery life)
 - WiFi network for initial configuration and weather data updates
@@ -31,8 +33,14 @@ See also the [blog post](https://blog.shvn.dev/posts/2025-lilygo-t5-weather-stat
 
 1. Install PlatformIO
 2. Clone this repository
-3. Build and upload the firmware
-4. Upload the filesystem image (contains web interface files)
+3. **Configure display type** (if using a different display):
+   - Edit `src/DisplayType.h`
+   - Set the appropriate `#define` for your display type:
+     - `#define ARDUINO_LILYGO_T5_V213 1` (default, 2.13" display)
+     - `#define ARDUINO_LILYGO_T5_V213_4G 1` (2.13" 4-grayscale display)
+   - Comment out other display definitions
+4. Build and upload the firmware
+5. Upload the filesystem image (contains web interface files)
 
 ## Configuration
 

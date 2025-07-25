@@ -140,6 +140,10 @@ void ConfigurationServer::handleSave(AsyncWebServerRequest *request) {
       config.countryCode = request->getParam("countryCode", true)->value();
     }
 
+    if (request->hasParam("imageUrl", true)) {
+      config.imageUrl = request->getParam("imageUrl", true)->value();
+    }
+
     Serial.println("Configuration received");
     request->send(200, "text/plain", "OK");
 
@@ -179,6 +183,7 @@ String ConfigurationServer::getConfigurationPage() {
   html.replace("{{CURRENT_AI_PROMPT_STYLE}}", currentConfiguration.aiPromptStyle);
   html.replace("{{CURRENT_CITY}}", currentConfiguration.city);
   html.replace("{{CURRENT_COUNTRY_CODE}}", currentConfiguration.countryCode);
+  html.replace("{{CURRENT_IMAGE_URL}}", currentConfiguration.imageUrl);
   return html;
 }
 
