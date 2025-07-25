@@ -24,6 +24,7 @@ class CurrentWeatherScreen : public Screen {
                        const String& countryCode);
 
   void render() override;
+  int nextRefreshInSeconds() override;
 };
 
 #endif

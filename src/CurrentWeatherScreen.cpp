@@ -98,3 +98,5 @@ void CurrentWeatherScreen::render() {
   display.hibernate();
   Serial.println("Current weather display updated");
 }
+
+int CurrentWeatherScreen::nextRefreshInSeconds() { return 900; }

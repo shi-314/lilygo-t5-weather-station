@@ -15,6 +15,7 @@ class WifiErrorScreen : public Screen {
   WifiErrorScreen(DisplayType& display);
 
   void render() override;
+  int nextRefreshInSeconds() override;
 };
 
 #endif

@@ -48,3 +48,5 @@ void WifiErrorScreen::render() {
   display.displayWindow(0, 0, display.width(), display.height());
   display.hibernate();
 }
+
+int WifiErrorScreen::nextRefreshInSeconds() { return 600; }

@@ -28,6 +28,7 @@ class ImageScreen : public Screen {
  public:
   ImageScreen(DisplayType& display, ApplicationConfig& config);
   void render() override;
+  int nextRefreshInSeconds() override;
 };
 
 #endif

@@ -313,3 +313,5 @@ void MeteogramWeatherScreen::drawMeteogram(int x_base, int y_base, int w, int h)
     gfx.print(lastUpdateStr);
   }
 }
+
+int MeteogramWeatherScreen::nextRefreshInSeconds() { return 900; }

@@ -119,3 +119,5 @@ void MessageScreen::render() {
   display.hibernate();
   Serial.println("Message displayed");
 }
+
+int MessageScreen::nextRefreshInSeconds() { return 3600; }

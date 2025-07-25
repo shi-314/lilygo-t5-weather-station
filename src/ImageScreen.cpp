@@ -247,3 +247,5 @@ String ImageScreen::urlEncode(const String& str) {
   }
   return encoded;
 }
+
+int ImageScreen::nextRefreshInSeconds() { return 10; }
