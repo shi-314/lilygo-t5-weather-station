@@ -75,7 +75,7 @@ jobs:
         tag_name: ${{ steps.build_info.outputs.tag }}
         name: "LilyGO T5 Weather Station - ${{ steps.build_info.outputs.short_sha }}"
         body: |
-          ## 🚀 Automated Release
+          ## 🚀 Release
           
           **Commit:** ${{ steps.build_info.outputs.short_sha }}  
           **Build Date:** ${{ steps.build_info.outputs.timestamp }}
