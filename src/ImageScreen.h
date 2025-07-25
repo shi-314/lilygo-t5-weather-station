@@ -15,13 +15,11 @@ class ImageScreen : public Screen {
   ApplicationConfig& config;
 
   const uint8_t* smallFont;
-
-  const char* imageServerUrl = "https://dither.lab.shvn.dev";
+  String ditheringServiceUrl;
 
   bool downloadAndDisplayImage();
   void displayError(const String& errorMessage);
   String urlEncode(const String& str);
-  uint16_t mapPixelIndexToDisplayColor(uint8_t pixelIndex);
 
  public:
   ImageScreen(DisplayType& display, ApplicationConfig& config);

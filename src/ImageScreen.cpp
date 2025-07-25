@@ -5,14 +5,17 @@
 #include "battery.h"
 
 ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
-    : display(display), config(config), smallFont(u8g2_font_helvR08_tr) {
+    : display(display),
+      config(config),
+      smallFont(u8g2_font_helvR08_tr),
+      ditheringServiceUrl("https://dither.lab.shvn.dev") {
   gfx.begin(display);
 }
 
 bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
-  String requestUrl = String(imageServerUrl) + "/process?url=" + urlEncode(String(config.imageUrl)) +
+  String requestUrl = ditheringServiceUrl + "/process?url=" + urlEncode(String(config.imageUrl)) +
                       "&width=" + String(display.height()) + "&height=" + String(display.width()) + "&dither=true";
 
   Serial.println("Requesting image from: " + requestUrl);
@@ -118,10 +121,17 @@ bool ImageScreen::downloadAndDisplayImage() {
   uint32_t rowSize = ((imageWidth * bitsPerPixel + 31) / 32) * 4;
   uint8_t* rowBuffer = new uint8_t[rowSize];
 
+  // Create buffer for 2-bit grey pixmap (4 pixels per byte)
+  int16_t pixmapWidth = (imageWidth + 3) / 4;  // bytes per row for 2-bit depth
+  size_t pixmapSize = pixmapWidth * imageHeight;
+  uint8_t* greyPixmap = new uint8_t[pixmapSize];
+  memset(greyPixmap, 0, pixmapSize);
+
   for (int y = imageHeight - 1; y >= 0; y--) {
     if (dataIndex + rowSize > dataSize) {
       Serial.printf("Not enough data for image row: need %d bytes, have %d remaining\n", rowSize, dataSize - dataIndex);
       delete[] rowBuffer;
+      delete[] greyPixmap;
       http.end();
       return false;
     }
@@ -129,23 +139,24 @@ bool ImageScreen::downloadAndDisplayImage() {
     memcpy(rowBuffer, data + dataIndex, rowSize);
     dataIndex += rowSize;
 
-    int displayRowY = offsetY + y;
+    int pixmapRowY = y;
 
     for (int x = 0; x < imageWidth; x++) {
       uint8_t pixelIndex = rowBuffer[x];
 
-      uint16_t displayColor = mapPixelIndexToDisplayColor(pixelIndex);
+      // Pack 4 pixels per byte (2 bits each)
+      int byteIndex = pixmapRowY * pixmapWidth + x / 4;
+      int bitShift = 6 - (x % 4) * 2;  // 6, 4, 2, 0 for positions 0, 1, 2, 3
 
-      int displayX = offsetX + x;
-      int displayY = displayRowY;
-
-      if (displayX >= 0 && displayX < display.width() && displayY >= 0 && displayY < display.height()) {
-        display.drawPixel(displayX, displayY, displayColor);
-      }
+      greyPixmap[byteIndex] |= (pixelIndex << bitShift);
     }
   }
 
   delete[] rowBuffer;
+
+  display.drawGreyPixmap(greyPixmap, 2, offsetX, offsetY, imageWidth, imageHeight);
+
+  delete[] greyPixmap;
   http.end();
 
   return true;
@@ -184,21 +195,6 @@ void ImageScreen::displayError(const String& errorMessage) {
 
   display.displayWindow(0, 0, display.width(), display.height());
   display.hibernate();
-}
-
-uint16_t ImageScreen::mapPixelIndexToDisplayColor(uint8_t pixelIndex) {
-  switch (pixelIndex) {
-    case 0:
-      return GxEPD_BLACK;
-    case 1:
-      return GxEPD_DARKGREY;
-    case 2:
-      return GxEPD_LIGHTGREY;
-    case 3:
-      return GxEPD_WHITE;
-    default:
-      return GxEPD_WHITE;
-  }
 }
 
 String ImageScreen::urlEncode(const String& str) {
