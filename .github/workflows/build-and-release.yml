@@ -70,7 +70,7 @@ jobs:
         sha256sum *.bin > checksums.txt
         
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.build_info.outputs.tag }}
         name: "LilyGO T5 Weather Station - ${{ steps.build_info.outputs.short_sha }}"
