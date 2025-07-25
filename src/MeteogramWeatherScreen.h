@@ -26,6 +26,7 @@ class MeteogramWeatherScreen : public Screen {
   MeteogramWeatherScreen(DisplayType& display, const WeatherForecast& forecast);
 
   void render() override;
+  int nextRefreshInSeconds() override;
 };
 
 #endif

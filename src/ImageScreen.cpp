@@ -12,7 +12,15 @@ ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
   gfx.begin(display);
 }
 
-bool ImageScreen::downloadAndDisplayImage() {
+void ImageScreen::storeImageETag(const String& etag) {
+  strncpy(storedImageETag, etag.c_str(), sizeof(storedImageETag) - 1);
+  storedImageETag[sizeof(storedImageETag) - 1] = '\0';
+  Serial.println("Stored ETag: " + etag);
+}
+
+String ImageScreen::getStoredImageETag() { return String(storedImageETag); }
+
+int ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
   String requestUrl = ditheringServiceUrl + "/process?url=" + urlEncode(String(config.imageUrl)) +
@@ -23,17 +31,34 @@ bool ImageScreen::downloadAndDisplayImage() {
   http.begin(requestUrl);
   http.setTimeout(10000);
 
-  const char* headerKeys[] = {"Content-Type", "Transfer-Encoding"};
+  String storedETag = getStoredImageETag();
+  if (storedETag.length() > 0) {
+    http.addHeader("If-None-Match", storedETag);
+  }
+
+  const char* headerKeys[] = {"Content-Type", "Transfer-Encoding", "ETag"};
   size_t headerKeysSize = sizeof(headerKeys) / sizeof(char*);
   http.collectHeaders(headerKeys, headerKeysSize);
 
   int httpCode = http.GET();
 
+  if (httpCode == HTTP_CODE_NOT_MODIFIED) {
+    Serial.println("Image not modified (304), using cached version");
+    http.end();
+    return httpCode;
+  }
+
   if (httpCode != HTTP_CODE_OK) {
     Serial.printf("HTTP request failed with code: %d\n", httpCode);
     Serial.printf("HTTP error: %s\n", http.errorToString(httpCode).c_str());
     http.end();
-    return false;
+    return httpCode;
+  }
+
+  // Store new ETag if present
+  String newETag = http.header("ETag");
+  if (newETag.length() > 0) {
+    storeImageETag(newETag);
   }
 
   String contentType = http.header("Content-Type");
@@ -41,7 +66,7 @@ bool ImageScreen::downloadAndDisplayImage() {
   if (!contentType.isEmpty() && contentType != "image/bmp") {
     Serial.println("Unexpected content type: " + contentType);
     http.end();
-    return false;
+    return -1;
   }
 
   String payload = http.getString();
@@ -49,7 +74,7 @@ bool ImageScreen::downloadAndDisplayImage() {
   if (payload.length() == 0) {
     Serial.println("Empty payload received");
     http.end();
-    return false;
+    return -1;
   }
 
   const uint8_t* data = (const uint8_t*)payload.c_str();
@@ -59,7 +84,7 @@ bool ImageScreen::downloadAndDisplayImage() {
   if (dataSize < 54) {
     Serial.printf("Payload too small for BMP header: got %d bytes, expected at least 54\n", dataSize);
     http.end();
-    return false;
+    return -1;
   }
 
   uint8_t bmpHeader[54];
@@ -69,7 +94,7 @@ bool ImageScreen::downloadAndDisplayImage() {
   if (bmpHeader[0] != 'B' || bmpHeader[1] != 'M') {
     Serial.printf("Invalid BMP signature: got 0x%02X 0x%02X, expected 0x42 0x4D ('BM')\n", bmpHeader[0], bmpHeader[1]);
     http.end();
-    return false;
+    return -1;
   }
 
   uint32_t dataOffset = bmpHeader[10] | (bmpHeader[11] << 8) | (bmpHeader[12] << 16) | (bmpHeader[13] << 24);
@@ -81,19 +106,19 @@ bool ImageScreen::downloadAndDisplayImage() {
   if (bitsPerPixel != 8) {
     Serial.printf("Unsupported bits per pixel: %d (expected 8 for indexed color)\n", bitsPerPixel);
     http.end();
-    return false;
+    return -1;
   }
 
   if (compression != 0) {
     Serial.printf("Unsupported compression: %d (expected 0 for uncompressed)\n", compression);
     http.end();
-    return false;
+    return -1;
   }
 
   if (dataIndex + 16 > dataSize) {
     Serial.printf("Not enough data for color palette: need %d bytes, have %d\n", dataIndex + 16, dataSize);
     http.end();
-    return false;
+    return -1;
   }
 
   uint8_t palette[16];
@@ -105,7 +130,7 @@ bool ImageScreen::downloadAndDisplayImage() {
     if (dataIndex + skipBytes > dataSize) {
       Serial.printf("Data offset beyond payload size: offset %d, payload size %d\n", dataOffset, dataSize);
       http.end();
-      return false;
+      return -1;
     }
     dataIndex += skipBytes;
   }
@@ -133,7 +158,7 @@ bool ImageScreen::downloadAndDisplayImage() {
       delete[] rowBuffer;
       delete[] greyPixmap;
       http.end();
-      return false;
+      return -1;
     }
 
     memcpy(rowBuffer, data + dataIndex, rowSize);
@@ -159,17 +184,48 @@ bool ImageScreen::downloadAndDisplayImage() {
   delete[] greyPixmap;
   http.end();
 
-  return true;
+  return HTTP_CODE_OK;
 }
 
 void ImageScreen::render() {
-  if (!downloadAndDisplayImage()) {
-    displayError("Failed to load image");
+  int statusCode = downloadAndDisplayImage();
+
+  if (statusCode == HTTP_CODE_NOT_MODIFIED) {
     return;
   }
 
-  display.displayWindow(0, 0, display.width(), display.height());
-  display.hibernate();
+  if (statusCode == HTTP_CODE_OK) {
+    display.displayWindow(0, 0, display.width(), display.height());
+    display.hibernate();
+    return;
+  }
+
+  String errorMessage;
+  switch (statusCode) {
+    case -1:
+      errorMessage = "Invalid image data";
+      break;
+    case HTTP_CODE_NOT_FOUND:
+      errorMessage = "Image not found";
+      break;
+    case HTTP_CODE_UNSUPPORTED_MEDIA_TYPE:
+      errorMessage = "Unsupported image format";
+      break;
+    case HTTP_CODE_NO_CONTENT:
+      errorMessage = "Empty image response";
+      break;
+    case HTTP_CODE_REQUEST_TIMEOUT:
+      errorMessage = "Request timeout";
+      break;
+    case HTTP_CODE_SERVICE_UNAVAILABLE:
+      errorMessage = "Service unavailable";
+      break;
+    default:
+      errorMessage = "Failed to load image";
+      break;
+  }
+
+  displayError(errorMessage);
 }
 
 void ImageScreen::displayError(const String& errorMessage) {
@@ -212,3 +268,5 @@ String ImageScreen::urlEncode(const String& str) {
   }
   return encoded;
 }
+
+int ImageScreen::nextRefreshInSeconds() { return 900; }

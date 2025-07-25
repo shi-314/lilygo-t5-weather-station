@@ -21,6 +21,7 @@ class ConfigurationScreen : public Screen {
   ConfigurationScreen(DisplayType& display);
 
   void render() override;
+  int nextRefreshInSeconds() override;
 };
 
 #endif

@@ -20,6 +20,7 @@ class MessageScreen : public Screen {
 
   void setMessageText(const String& text);
   void render() override;
+  int nextRefreshInSeconds() override;
 };
 
 #endif

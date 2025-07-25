@@ -112,3 +112,5 @@ void ConfigurationScreen::render() {
 
   Serial.println("Configuration screen with enhanced QR code displayed");
 }
+
+int ConfigurationScreen::nextRefreshInSeconds() { return 600; }
