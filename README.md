@@ -21,7 +21,7 @@ See also the [blog post](https://blog.shvn.dev/posts/2025-lilygo-t5-weather-stat
 
 ## Hardware Required
 
-- LilyGo T5 2.16 e-paper display board. This project supports the following boards:
+- One of the following boards:
     - [LilyGo T5 v2.13 e-paper display board (4 grayscale colors)](https://lilygo.cc/en-pl/products/t5-2-13inch-e-paper?variant=42466420850869)
     - [LilyGO T5 v2.13 e-paper display board (officially only black and white)](https://lilygo.cc/en-pl/products/t5-v2-3-1?variant=42366871666869)
 - [Case](https://www.thingiverse.com/thing:4670205/files)
