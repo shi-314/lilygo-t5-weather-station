@@ -9,47 +9,6 @@ ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
   gfx.begin(display);
 }
 
-String ImageScreen::urlEncode(const String& str) {
-  String encoded = "";
-  char c;
-  for (int i = 0; i < str.length(); i++) {
-    c = str.charAt(i);
-    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-      encoded += c;
-    } else {
-      encoded += '%';
-      if (c < 16) encoded += '0';
-      encoded += String(c, HEX);
-    }
-  }
-  return encoded;
-}
-
-void ImageScreen::displayError(const String& errorMessage) {
-  Serial.println("ImageScreen Error: " + errorMessage);
-
-  display.init(115200);
-  display.setRotation(1);
-  display.fillScreen(GxEPD_WHITE);
-
-  gfx.setFontMode(1);
-  gfx.setForegroundColor(GxEPD_BLACK);
-  gfx.setBackgroundColor(GxEPD_WHITE);
-  gfx.setFont(smallFont);
-
-  int textWidth = gfx.getUTF8Width(errorMessage.c_str());
-  int textHeight = gfx.getFontAscent() - gfx.getFontDescent();
-
-  int x = (display.width() - textWidth) / 2;
-  int y = (display.height() + textHeight) / 2;
-
-  gfx.setCursor(x, y);
-  gfx.print(errorMessage);
-
-  display.displayWindow(0, 0, display.width(), display.height());
-  display.hibernate();
-}
-
 bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
@@ -155,7 +114,8 @@ bool ImageScreen::downloadAndDisplayImage() {
   int offsetX = 0;
   int offsetY = 0;
 
-  uint32_t rowSize = ((imageWidth * bitsPerPixel + 31) / 32) * 4;  // Row size padded to 4-byte boundary
+  // Row size padded to 4-byte boundary
+  uint32_t rowSize = ((imageWidth * bitsPerPixel + 31) / 32) * 4;
   uint8_t* rowBuffer = new uint8_t[rowSize];
 
   for (int y = imageHeight - 1; y >= 0; y--) {
@@ -169,31 +129,12 @@ bool ImageScreen::downloadAndDisplayImage() {
     memcpy(rowBuffer, data + dataIndex, rowSize);
     dataIndex += rowSize;
 
-    // Calculate the correct display Y coordinate (BMP is bottom-to-top, so we need to flip it)
     int displayRowY = offsetY + y;
 
     for (int x = 0; x < imageWidth; x++) {
       uint8_t pixelIndex = rowBuffer[x];
 
-      // Map the 4-color palette to display colors
-      uint16_t displayColor;
-      switch (pixelIndex) {
-        case 0:
-          displayColor = GxEPD_BLACK;
-          break;  // Black
-        case 1:
-          displayColor = GxEPD_DARKGREY;
-          break;  // Dark Gray
-        case 2:
-          displayColor = GxEPD_LIGHTGREY;
-          break;  // Light Gray
-        case 3:
-          displayColor = GxEPD_WHITE;
-          break;  // White
-        default:
-          displayColor = GxEPD_WHITE;
-          break;
-      }
+      uint16_t displayColor = mapPixelIndexToDisplayColor(pixelIndex);
 
       int displayX = offsetX + x;
       int displayY = displayRowY;
@@ -218,4 +159,60 @@ void ImageScreen::render() {
 
   display.displayWindow(0, 0, display.width(), display.height());
   display.hibernate();
+}
+
+void ImageScreen::displayError(const String& errorMessage) {
+  Serial.println("ImageScreen Error: " + errorMessage);
+
+  display.init(115200);
+  display.setRotation(1);
+  display.fillScreen(GxEPD_WHITE);
+
+  gfx.setFontMode(1);
+  gfx.setForegroundColor(GxEPD_BLACK);
+  gfx.setBackgroundColor(GxEPD_WHITE);
+  gfx.setFont(smallFont);
+
+  int textWidth = gfx.getUTF8Width(errorMessage.c_str());
+  int textHeight = gfx.getFontAscent() - gfx.getFontDescent();
+
+  int x = (display.width() - textWidth) / 2;
+  int y = (display.height() + textHeight) / 2;
+
+  gfx.setCursor(x, y);
+  gfx.print(errorMessage);
+
+  display.displayWindow(0, 0, display.width(), display.height());
+  display.hibernate();
+}
+
+uint16_t ImageScreen::mapPixelIndexToDisplayColor(uint8_t pixelIndex) {
+  switch (pixelIndex) {
+    case 0:
+      return GxEPD_BLACK;
+    case 1:
+      return GxEPD_DARKGREY;
+    case 2:
+      return GxEPD_LIGHTGREY;
+    case 3:
+      return GxEPD_WHITE;
+    default:
+      return GxEPD_WHITE;
+  }
+}
+
+String ImageScreen::urlEncode(const String& str) {
+  String encoded = "";
+  char c;
+  for (int i = 0; i < str.length(); i++) {
+    c = str.charAt(i);
+    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+      encoded += c;
+    } else {
+      encoded += '%';
+      if (c < 16) encoded += '0';
+      encoded += String(c, HEX);
+    }
+  }
+  return encoded;
 }
