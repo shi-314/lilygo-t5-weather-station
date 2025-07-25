@@ -18,7 +18,7 @@ bool ImageScreen::downloadAndDisplayImage() {
   Serial.println("Requesting image from: " + requestUrl);
 
   http.begin(requestUrl);
-  http.setTimeout(30000);
+  http.setTimeout(10000);
 
   const char* headerKeys[] = {"Content-Type", "Transfer-Encoding"};
   size_t headerKeysSize = sizeof(headerKeys) / sizeof(char*);
