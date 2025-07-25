@@ -34,14 +34,10 @@ const String aiWeatherPrompt =
 
 DisplayType display(Epd2Type(/*CS=5*/ SS, /*DC=*/17, /*RST=*/16, /*BUSY=*/4));
 
-const unsigned long deepSleepMicros = 900000000;  // Deep sleep time in microseconds (15 minutes)
-const unsigned long aiMessageDeepSleepMicros =
-    3600000000;  // Deep sleep time for AI message screen in microseconds (1 hour)
-
 OpenMeteoAPI openMeteoAPI;
 
-void goToSleep(uint64_t sleepTime);
-void displayCurrentScreen();
+void goToSleep(uint64_t sleepTimeInSeconds);
+int displayCurrentScreen();
 void cycleToNextScreen();
 bool isButtonWakeup();
 void updateConfiguration(const Configuration& config);
@@ -89,7 +85,7 @@ void cycleToNextScreen() {
   configStorage.save(*appConfig);
 }
 
-void displayCurrentScreen() {
+int displayCurrentScreen() {
   switch (appConfig->currentScreenIndex) {
     case CONFIG_SCREEN: {
       ConfigurationScreen configurationScreen(display);
@@ -117,20 +113,20 @@ void displayCurrentScreen() {
       }
 
       configurationServer.stop();
-      break;
+      return configurationScreen.nextRefreshInSeconds();
     }
     case CURRENT_WEATHER_SCREEN: {
       WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
       CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(appConfig->city),
                                                 String(appConfig->countryCode));
       currentWeatherScreen.render();
-      break;
+      return currentWeatherScreen.nextRefreshInSeconds();
     }
     case METEOGRAM_SCREEN: {
       WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
       MeteogramWeatherScreen meteogramWeatherScreen(display, forecastData);
       meteogramWeatherScreen.render();
-      break;
+      return meteogramWeatherScreen.nextRefreshInSeconds();
     }
     case MESSAGE_SCREEN: {
       WeatherForecast forecastData = openMeteoAPI.getForecast(appConfig->latitude, appConfig->longitude);
@@ -145,12 +141,12 @@ void displayCurrentScreen() {
       MessageScreen messageScreen(display);
       messageScreen.setMessageText(chatGPTResponse);
       messageScreen.render();
-      break;
+      return messageScreen.nextRefreshInSeconds();
     }
     case IMAGE_SCREEN: {
       ImageScreen imageScreen(display, *appConfig);
       imageScreen.render();
-      break;
+      return imageScreen.nextRefreshInSeconds();
     }
     default: {
       Serial.println("Unknown screen index, defaulting to current weather");
@@ -160,7 +156,7 @@ void displayCurrentScreen() {
       CurrentWeatherScreen currentWeatherScreen(display, forecastData, String(appConfig->city),
                                                 String(appConfig->countryCode));
       currentWeatherScreen.render();
-      break;
+      return currentWeatherScreen.nextRefreshInSeconds();
     }
   }
 }
@@ -245,12 +241,13 @@ void updateConfiguration(const Configuration& config) {
   Serial.println("Image URL: " + String(strlen(appConfig->imageUrl) > 0 ? appConfig->imageUrl : "[NOT SET]"));
 }
 
-void goToSleep(uint64_t sleepTime) {
-  Serial.println("Going to deep sleep for " + String(sleepTime / 1000000) + " seconds");
+void goToSleep(uint64_t sleepTimeInSeconds) {
+  Serial.println("Going to deep sleep for " + String(sleepTimeInSeconds) + " seconds");
   Serial.println("Press button to wake up early and cycle screens");
 
+  uint64_t sleepTimeMicros = sleepTimeInSeconds * 1000000ULL;
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_39, 0);
-  esp_sleep_enable_timer_wakeup(sleepTime);
+  esp_sleep_enable_timer_wakeup(sleepTimeMicros);
   esp_deep_sleep_start();
 }
 
@@ -300,7 +297,8 @@ void setup() {
       Serial.println("Failed to connect to WiFi");
       WifiErrorScreen errorScreen(display);
       errorScreen.render();
-      goToSleep(deepSleepMicros);
+      int refreshSeconds = errorScreen.nextRefreshInSeconds();
+      goToSleep(refreshSeconds);
       return;
     }
 
@@ -310,15 +308,8 @@ void setup() {
     }
   }
 
-  displayCurrentScreen();
-
-  if (appConfig->currentScreenIndex == CONFIG_SCREEN) {
-    goToSleep(100000);
-  } else if (appConfig->currentScreenIndex == MESSAGE_SCREEN) {
-    goToSleep(aiMessageDeepSleepMicros);
-  } else {
-    goToSleep(deepSleepMicros);
-  }
+  int refreshSeconds = displayCurrentScreen();
+  goToSleep(refreshSeconds);
 }
 
 void loop() {}
