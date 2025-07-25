@@ -8,6 +8,8 @@
 #include "DisplayType.h"
 #include "Screen.h"
 
+RTC_DATA_ATTR static char storedImageETag[128] = "";
+
 class ImageScreen : public Screen {
  private:
   DisplayType& display;
@@ -20,6 +22,8 @@ class ImageScreen : public Screen {
   bool downloadAndDisplayImage();
   void displayError(const String& errorMessage);
   String urlEncode(const String& str);
+  void storeImageETag(const String& etag);
+  String getStoredImageETag();
 
  public:
   ImageScreen(DisplayType& display, ApplicationConfig& config);

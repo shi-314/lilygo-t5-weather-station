@@ -12,6 +12,14 @@ ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
   gfx.begin(display);
 }
 
+void ImageScreen::storeImageETag(const String& etag) {
+  strncpy(storedImageETag, etag.c_str(), sizeof(storedImageETag) - 1);
+  storedImageETag[sizeof(storedImageETag) - 1] = '\0';
+  Serial.println("Stored ETag: " + etag);
+}
+
+String ImageScreen::getStoredImageETag() { return String(storedImageETag); }
+
 bool ImageScreen::downloadAndDisplayImage() {
   HTTPClient http;
 
@@ -23,17 +31,34 @@ bool ImageScreen::downloadAndDisplayImage() {
   http.begin(requestUrl);
   http.setTimeout(10000);
 
-  const char* headerKeys[] = {"Content-Type", "Transfer-Encoding"};
+  String storedETag = getStoredImageETag();
+  if (storedETag.length() > 0) {
+    http.addHeader("If-None-Match", storedETag);
+  }
+
+  const char* headerKeys[] = {"Content-Type", "Transfer-Encoding", "ETag"};
   size_t headerKeysSize = sizeof(headerKeys) / sizeof(char*);
   http.collectHeaders(headerKeys, headerKeysSize);
 
   int httpCode = http.GET();
+
+  if (httpCode == HTTP_CODE_NOT_MODIFIED) {
+    Serial.println("Image not modified (304), using cached version");
+    http.end();
+    return false;
+  }
 
   if (httpCode != HTTP_CODE_OK) {
     Serial.printf("HTTP request failed with code: %d\n", httpCode);
     Serial.printf("HTTP error: %s\n", http.errorToString(httpCode).c_str());
     http.end();
     return false;
+  }
+
+  // Store new ETag if present
+  String newETag = http.header("ETag");
+  if (newETag.length() > 0) {
+    storeImageETag(newETag);
   }
 
   String contentType = http.header("Content-Type");
@@ -163,7 +188,17 @@ bool ImageScreen::downloadAndDisplayImage() {
 }
 
 void ImageScreen::render() {
-  if (!downloadAndDisplayImage()) {
+  bool imageDownloaded = downloadAndDisplayImage();
+
+  if (!imageDownloaded) {
+    // Check if this was a 304 Not Modified response
+    String storedETag = getStoredImageETag();
+    if (storedETag.length() > 0) {
+      Serial.println("Image not modified, skipping render");
+      return;
+    }
+
+    // This was an actual error
     displayError("Failed to load image");
     return;
   }
