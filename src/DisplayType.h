@@ -14,8 +14,8 @@ using Epd2Type = GxEPD2_213_GDEY0213B74;
 
 #elif defined(ARDUINO_LILYGO_T5_V213_4G)
 
-using DisplayType = GxEPD2_4G_4G<GxEPD2_213_GDEY0213B74, GxEPD2_213_GDEY0213B74::HEIGHT>;
-using Epd2Type = GxEPD2_213_GDEY0213B74;
+using DisplayType = GxEPD2_4G_4G<GxEPD2_213_flex, GxEPD2_213_flex::HEIGHT>;
+using Epd2Type = GxEPD2_213_flex;
 
 #endif
 
