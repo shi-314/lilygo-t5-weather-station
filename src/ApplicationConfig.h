@@ -14,7 +14,8 @@ enum ScreenType {
   METEOGRAM_SCREEN = 2,
   MESSAGE_SCREEN = 3,
   IMAGE_SCREEN = 4,
-  SCREEN_COUNT = 5
+  FIRMWARE_UPDATE_SCREEN = 5,
+  SCREEN_COUNT = 6
 };
 
 struct ApplicationConfig {

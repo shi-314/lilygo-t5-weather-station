@@ -10,6 +10,7 @@
 #include "ConfigurationServer.h"
 #include "CurrentWeatherScreen.h"
 #include "DisplayType.h"
+#include "FirmwareUpdateScreen.h"
 #include "ImageScreen.h"
 #include "MessageScreen.h"
 #include "MeteogramWeatherScreen.h"
@@ -147,6 +148,11 @@ int displayCurrentScreen() {
       ImageScreen imageScreen(display, *appConfig);
       imageScreen.render();
       return imageScreen.nextRefreshInSeconds();
+    }
+    case FIRMWARE_UPDATE_SCREEN: {
+      FirmwareUpdateScreen firmwareUpdateScreen(display);
+      firmwareUpdateScreen.render();
+      return firmwareUpdateScreen.nextRefreshInSeconds();
     }
     default: {
       Serial.println("Unknown screen index, defaulting to current weather");
