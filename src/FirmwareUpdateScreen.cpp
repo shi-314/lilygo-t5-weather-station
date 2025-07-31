@@ -94,15 +94,15 @@ void FirmwareUpdateScreen::render() {
   int displayWidth = display.width();
   int displayHeight = display.height();
   int margin = 8;
-  int yPos = margin + 15;
+  int yPos = margin + 18;
   
-  // Title
-  gfx.setFont(primaryFont);
-  String title = "Firmware Update Check";
+  // Title - bold and properly centered
+  gfx.setFont(u8g2_font_helvB14_tr);  // Bold title font
+  String title = "Firmware";
   int titleWidth = gfx.getUTF8Width(title.c_str());
   gfx.setCursor((displayWidth - titleWidth) / 2, yPos);
   gfx.print(title);
-  yPos += 18;
+  yPos += 22;
   
   // Check for updates
   bool updateCheckSuccess = checkForUpdates();
@@ -122,24 +122,42 @@ void FirmwareUpdateScreen::render() {
     gfx.setCursor((displayWidth - retryWidth) / 2, yPos);
     gfx.print(retryMsg);
   } else {
-    // Current version
-    String currentText = "Current: " + firmwareInfo.currentVersion;
-    int currentWidth = gfx.getUTF8Width(currentText.c_str());
-    gfx.setCursor((displayWidth - currentWidth) / 2, yPos);
-    gfx.print(currentText);
-    yPos += 15;
+    // Center the version block horizontally
+    gfx.setFont(u8g2_font_helvB08_tr);
+    int maxLabelWidth = max(gfx.getUTF8Width("Current: "), gfx.getUTF8Width("Latest:  "));
     
-    // Latest version
-    String latestText = "Latest: " + firmwareInfo.latestVersion;
-    int latestWidth = gfx.getUTF8Width(latestText.c_str());
-    gfx.setCursor((displayWidth - latestWidth) / 2, yPos);
-    gfx.print(latestText);
-    yPos += 18;
+    gfx.setFont(u8g2_font_courR08_tf);
+    int maxVersionWidth = max(gfx.getUTF8Width(firmwareInfo.currentVersion.c_str()), 
+                             gfx.getUTF8Width(firmwareInfo.latestVersion.c_str()));
     
-    // Status
+    int totalWidth = maxLabelWidth + maxVersionWidth;
+    int startX = (displayWidth - totalWidth) / 2;
+    
+    // Current version - properly aligned
+    gfx.setFont(u8g2_font_helvB08_tr);
+    gfx.setCursor(startX, yPos);
+    gfx.print("Current:");
+    
+    gfx.setFont(u8g2_font_courR08_tf);
+    gfx.setCursor(startX + maxLabelWidth, yPos);
+    gfx.print(firmwareInfo.currentVersion);
+    yPos += 12;
+    
+    // Latest version - properly aligned
+    gfx.setFont(u8g2_font_helvB08_tr);
+    gfx.setCursor(startX, yPos);
+    gfx.print("Latest: ");
+    
+    gfx.setFont(u8g2_font_courR08_tf);
+    gfx.setCursor(startX + maxLabelWidth, yPos);
+    gfx.print(firmwareInfo.latestVersion);
+    yPos += 16;
+    
+    // Status - centered and properly spaced
+    gfx.setFont(u8g2_font_helvR10_tf);  // Subtle regular font
     String statusText;
     if (firmwareInfo.updateAvailable) {
-      statusText = "UPDATE AVAILABLE!";
+      statusText = "Update available";
     } else {
       statusText = "Up to date";
     }
@@ -148,31 +166,8 @@ void FirmwareUpdateScreen::render() {
     gfx.setCursor((displayWidth - statusWidth) / 2, yPos);
     gfx.print(statusText);
     yPos += 18;
-    
-    // Additional info for updates
-    if (firmwareInfo.updateAvailable) {
-      gfx.setFont(smallFont);
-      String infoText = "Visit GitHub releases page";
-      int infoWidth = gfx.getUTF8Width(infoText.c_str());
-      gfx.setCursor((displayWidth - infoWidth) / 2, yPos);
-      gfx.print(infoText);
-      yPos += 10;
-      
-      String urlText = "for download instructions";
-      int urlWidth = gfx.getUTF8Width(urlText.c_str());
-      gfx.setCursor((displayWidth - urlWidth) / 2, yPos);
-      gfx.print(urlText);
-    }
   }
   
-  // Display battery status in corner
-  String batteryStatus = getBatteryStatus();
-  gfx.setFont(smallFont);
-  gfx.setForegroundColor(GxEPD_BLACK);
-  
-  int batteryWidth = gfx.getUTF8Width(batteryStatus.c_str());
-  gfx.setCursor(displayWidth - batteryWidth - 3, displayHeight - 3);
-  gfx.print(batteryStatus);
   
   display.displayWindow(0, 0, displayWidth, displayHeight);
   display.hibernate();
