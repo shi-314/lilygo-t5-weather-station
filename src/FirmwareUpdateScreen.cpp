@@ -93,16 +93,15 @@ void FirmwareUpdateScreen::render() {
   
   int displayWidth = display.width();
   int displayHeight = display.height();
-  int margin = 8;
-  int yPos = margin + 18;
+  int margin = 12;
+  int yPos = margin + 15;
   
-  // Title - bold and properly centered
-  gfx.setFont(u8g2_font_helvB14_tr);  // Bold title font
+  // Title - left aligned with smaller font
+  gfx.setFont(u8g2_font_helvB12_tr);  // Smaller bold title font
   String title = "Firmware";
-  int titleWidth = gfx.getUTF8Width(title.c_str());
-  gfx.setCursor((displayWidth - titleWidth) / 2, yPos);
+  gfx.setCursor(margin, yPos);
   gfx.print(title);
-  yPos += 22;
+  yPos += 20;
   
   // Check for updates
   bool updateCheckSuccess = checkForUpdates();
@@ -122,39 +121,32 @@ void FirmwareUpdateScreen::render() {
     gfx.setCursor((displayWidth - retryWidth) / 2, yPos);
     gfx.print(retryMsg);
   } else {
-    // Center the version block horizontally
+    // Left align version block with calculated label width
     gfx.setFont(u8g2_font_helvB08_tr);
     int maxLabelWidth = max(gfx.getUTF8Width("Current: "), gfx.getUTF8Width("Latest:  "));
     
-    gfx.setFont(u8g2_font_courR08_tf);
-    int maxVersionWidth = max(gfx.getUTF8Width(firmwareInfo.currentVersion.c_str()), 
-                             gfx.getUTF8Width(firmwareInfo.latestVersion.c_str()));
-    
-    int totalWidth = maxLabelWidth + maxVersionWidth;
-    int startX = (displayWidth - totalWidth) / 2;
-    
-    // Current version - properly aligned
+    // Current version - left aligned
     gfx.setFont(u8g2_font_helvB08_tr);
-    gfx.setCursor(startX, yPos);
+    gfx.setCursor(margin, yPos);
     gfx.print("Current:");
     
     gfx.setFont(u8g2_font_courR08_tf);
-    gfx.setCursor(startX + maxLabelWidth, yPos);
+    gfx.setCursor(margin + maxLabelWidth, yPos);
     gfx.print(firmwareInfo.currentVersion);
     yPos += 12;
     
-    // Latest version - properly aligned
+    // Latest version - left aligned
     gfx.setFont(u8g2_font_helvB08_tr);
-    gfx.setCursor(startX, yPos);
+    gfx.setCursor(margin, yPos);
     gfx.print("Latest: ");
     
     gfx.setFont(u8g2_font_courR08_tf);
-    gfx.setCursor(startX + maxLabelWidth, yPos);
+    gfx.setCursor(margin + maxLabelWidth, yPos);
     gfx.print(firmwareInfo.latestVersion);
-    yPos += 16;
+    yPos += 22;
     
-    // Status - centered and properly spaced
-    gfx.setFont(u8g2_font_helvR10_tf);  // Subtle regular font
+    // Status - left aligned with smaller font and more spacing
+    gfx.setFont(u8g2_font_helvR08_tr);  // Smaller subtle font
     String statusText;
     if (firmwareInfo.updateAvailable) {
       statusText = "Update available";
@@ -162,8 +154,7 @@ void FirmwareUpdateScreen::render() {
       statusText = "Up to date";
     }
     
-    int statusWidth = gfx.getUTF8Width(statusText.c_str());
-    gfx.setCursor((displayWidth - statusWidth) / 2, yPos);
+    gfx.setCursor(margin, yPos);
     gfx.print(statusText);
     yPos += 18;
   }
