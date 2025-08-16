@@ -8,7 +8,7 @@ ImageScreen::ImageScreen(DisplayType& display, ApplicationConfig& config)
     : display(display),
       config(config),
       smallFont(u8g2_font_helvR08_tr),
-      ditheringServiceUrl("https://dither.lab.shvn.dev") {
+      ditheringServiceUrl("https://dither.shvn.dev") {
   gfx.begin(display);
 }
 
